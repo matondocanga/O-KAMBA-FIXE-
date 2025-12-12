@@ -3,8 +3,19 @@ import { useParams, Link } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { 
     Send, User as UserIcon, Settings, MessageCircle, Gift, Shuffle, 
-    Share2, Copy, Check, X, Gamepad2, HelpCircle, Puzzle, Users, PartyPopper 
+    Share2, Copy, Check, X, Gamepad2, HelpCircle, Puzzle, Users, PartyPopper,
+    ShoppingBag, MapPin, Phone, ExternalLink
 } from 'lucide-react';
+import { Product } from '../types';
+
+// --- MACRO YETU DATA ---
+const VENDOR = {
+    name: "Macro Yetu",
+    phone: "244943831033", // Formato internacional para API WhatsApp
+    displayPhone: "943 831 033",
+    address: "Kifica, rua 22, rua directa do BFA; Benfica",
+    logo: "https://ui-avatars.com/api/?name=Macro+Yetu&background=D4AF37&color=fff&size=128" // Placeholder logo
+};
 
 // --- SUB-COMPONENTS FOR GAMES ---
 
@@ -131,12 +142,17 @@ const RandomGenerator = ({ options, title }: { options: string[], title: string 
 
 export default function GroupView() {
   const { groupId } = useParams<{ groupId: string }>();
-  const { user, groups, messages, sendMessage, startDraw, getGroupMessages, approveParticipant, rejectParticipant, toggleGroupApproval } = useStore();
-  const [activeTab, setActiveTab] = useState<'chat' | 'info' | 'activities' | 'settings'>('info');
+  const { user, groups, messages, sendMessage, startDraw, getGroupMessages, approveParticipant, rejectParticipant, toggleGroupApproval, toggleGroupVisibility, products } = useStore();
+  const [activeTab, setActiveTab] = useState<'chat' | 'info' | 'activities' | 'settings' | 'shop'>('info');
   const [msgText, setMsgText] = useState('');
   const [showInvite, setShowInvite] = useState(false);
   const [activeGame, setActiveGame] = useState<string | null>(null);
   
+  // Shop State
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [orderRecipient, setOrderRecipient] = useState<string>('');
+  const [orderNotes, setOrderNotes] = useState('');
+
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const group = groups.find(g => g.id === groupId);
@@ -151,11 +167,17 @@ export default function GroupView() {
   const isAdmin = group.adminId === user.id;
   const myReceiverId = group.pairings[user.id];
 
-  // Dummy user lookup
+  // User Lookup Helpers
+  const getParticipant = (id: string) => {
+     // In real app, search in global user list. Mocking here.
+     if (id === user.id) return user;
+     // Return dummy user for others
+     return { id, name: id.startsWith('bot') ? `Elfo ${id.split('-')[1]}` : 'Kamba Amigo', avatarUrl: `https://ui-avatars.com/api/?name=${id}&background=random` };
+  };
+
   const getParticipantName = (id: string) => {
-    if (id === user.id) return user.name;
-    if (id.startsWith('bot')) return `Elfo ${id.split('-')[1]}`;
-    return "Kamba Novo"; 
+    const p = getParticipant(id);
+    return p.name;
   };
 
   const handleDraw = () => {
@@ -182,6 +204,32 @@ export default function GroupView() {
       alert("Link copiado!");
   };
 
+  // --- ORDER VIA WHATSAPP LOGIC ---
+  const handleBuyClick = (product: Product) => {
+      setSelectedProduct(product);
+      // Auto select secret santa receiver if known
+      if (myReceiverId) setOrderRecipient(myReceiverId);
+      else setOrderRecipient(group.participants.find(p => p !== user.id) || '');
+  };
+
+  const sendOrderToWhatsApp = () => {
+      if (!selectedProduct) return;
+      const recipientUser = getParticipant(orderRecipient);
+      
+      const message = `*Olá ${VENDOR.name}!* 👋%0A` +
+        `Quero encomendar um presente pelo App *O KAMBA FIXE!* 🎁%0A%0A` +
+        `🛍️ *Produto:* ${selectedProduct.name}%0A` +
+        `💰 *Valor:* ${selectedProduct.price} ${selectedProduct.currency}%0A%0A` +
+        `👤 *Para o Kamba:* ${recipientUser.name}%0A` +
+        `🖼️ *Foto para Personalizar:* ${recipientUser.avatarUrl || 'Sem foto'}%0A%0A` +
+        `📝 *Minhas Observações:* ${orderNotes || 'Sem observações'}%0A%0A` +
+        `Aguardo confirmação do pagamento!`;
+
+      window.open(`https://wa.me/${VENDOR.phone}?text=${message}`, '_blank');
+      setSelectedProduct(null);
+      setOrderNotes('');
+  };
+
   return (
     <div className="h-full flex flex-col md:block space-y-4">
       {/* Header */}
@@ -205,7 +253,7 @@ export default function GroupView() {
             </div>
         </div>
 
-        {/* Invite Modal/Dropdown */}
+        {/* Invite Modal */}
         {showInvite && (
             <div className="mt-4 p-4 bg-yellow-50 rounded-2xl border border-yellow-200 animate-in slide-in-from-top-2">
                 <h3 className="font-bold text-gray-800 mb-2">Convite Rápido</h3>
@@ -218,14 +266,14 @@ export default function GroupView() {
         )}
 
         {/* Secret Santa Reveal */}
-        {group.status === 'drawn' && myReceiverId && (
+        {group.status === 'drawn' && myReceiverId && activeTab !== 'shop' && (
             <div className="mt-6 bg-gradient-to-r from-christmasGreen to-green-800 rounded-2xl p-6 text-white text-center shadow-lg relative overflow-hidden">
                 <div className="relative z-10">
                     <p className="opacity-80 text-sm font-medium mb-1">O seu amigo oculto é...</p>
                     <h2 className="text-3xl font-header font-bold animate-pulse">{getParticipantName(myReceiverId)}</h2>
-                    <Link to="/app/shop" className="inline-block mt-4 bg-white text-christmasGreen px-4 py-2 rounded-xl font-bold text-sm hover:bg-gray-100 transition-colors">
+                    <button onClick={() => setActiveTab('shop')} className="inline-block mt-4 bg-white text-christmasGreen px-4 py-2 rounded-xl font-bold text-sm hover:bg-gray-100 transition-colors">
                         Encontrar Presente
-                    </Link>
+                    </button>
                 </div>
                 <Gift className="absolute -bottom-4 -right-4 text-white/10 w-32 h-32" />
             </div>
@@ -261,8 +309,11 @@ export default function GroupView() {
         <button onClick={() => setActiveTab('activities')} className={`flex-1 py-3 px-2 text-sm font-bold rounded-xl transition-all whitespace-nowrap flex justify-center gap-2 ${activeTab === 'activities' ? 'bg-christmasRed text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
             <Gamepad2 size={18} /> Atividades
         </button>
+        <button onClick={() => setActiveTab('shop')} className={`flex-1 py-3 px-2 text-sm font-bold rounded-xl transition-all whitespace-nowrap flex justify-center gap-2 ${activeTab === 'shop' ? 'bg-christmasRed text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
+            <ShoppingBag size={18} /> Loja
+        </button>
         <button onClick={() => setActiveTab('settings')} className={`flex-1 py-3 px-2 text-sm font-bold rounded-xl transition-all whitespace-nowrap flex justify-center gap-2 ${activeTab === 'settings' ? 'bg-christmasRed text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
-            <Settings size={18} /> <span className="hidden sm:inline">Configurações</span>
+            <Settings size={18} /> <span className="hidden sm:inline">Config</span>
         </button>
       </div>
 
@@ -320,6 +371,120 @@ export default function GroupView() {
                         </div>
                     ))}
                 </div>
+            </div>
+        )}
+
+        {/* SHOP TAB (NEW) */}
+        {activeTab === 'shop' && (
+            <div className="p-4 bg-gray-50 min-h-full">
+                {/* Vendor Profile Card */}
+                <div className="bg-white p-4 rounded-2xl border border-christmasGold shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center md:items-start relative overflow-hidden">
+                    <div className="w-16 h-16 rounded-full bg-christmasGold flex items-center justify-center text-white text-2xl font-bold font-header shrink-0">
+                        MY
+                    </div>
+                    <div className="text-center md:text-left flex-1 relative z-10">
+                        <h3 className="text-xl font-bold font-header text-gray-800">{VENDOR.name}</h3>
+                        <p className="text-sm text-gray-500 mb-2 flex items-center justify-center md:justify-start gap-1">
+                            <MapPin size={14} /> {VENDOR.address}
+                        </p>
+                        <p className="text-sm text-christmasGreen font-bold flex items-center justify-center md:justify-start gap-1">
+                             <Phone size={14} /> {VENDOR.displayPhone}
+                        </p>
+                        <div className="mt-2 text-xs bg-green-50 text-green-700 px-2 py-1 rounded-lg inline-block border border-green-200">
+                            Parceiro Oficial O Kamba Fixe!
+                        </div>
+                    </div>
+                    <div className="absolute right-0 top-0 opacity-10 transform translate-x-1/4 -translate-y-1/4">
+                         <ShoppingBag size={150} />
+                    </div>
+                </div>
+
+                <h3 className="font-bold text-gray-800 mb-4 ml-1">Presentes Disponíveis</h3>
+                <div className="grid grid-cols-2 gap-3">
+                     {products.map(product => (
+                        <div key={product.id} className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col">
+                            <div className="aspect-square relative">
+                                <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                                <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-lg font-bold">
+                                    {product.price.toLocaleString()} {product.currency}
+                                </div>
+                            </div>
+                            <div className="p-3 flex flex-col flex-1">
+                                <h4 className="font-bold text-gray-800 text-sm leading-tight mb-1">{product.name}</h4>
+                                <div className="mt-auto pt-2">
+                                    <button 
+                                        onClick={() => handleBuyClick(product)}
+                                        className="w-full bg-christmasGreen text-white py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 hover:bg-green-700"
+                                    >
+                                        <MessageCircle size={14} /> Encomendar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                     ))}
+                </div>
+
+                {/* ORDER MODAL */}
+                {selectedProduct && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+                        <div className="bg-white rounded-3xl p-6 w-full max-w-md animate-in fade-in zoom-in duration-200 relative">
+                            <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                                <X size={24} />
+                            </button>
+                            
+                            <h3 className="text-xl font-bold font-header text-gray-800 mb-1">Confirmar Pedido</h3>
+                            <p className="text-sm text-gray-500 mb-4">Enviar pedido para {VENDOR.name} via WhatsApp</p>
+
+                            <div className="bg-gray-50 p-3 rounded-xl flex gap-3 items-center mb-4 border border-gray-200">
+                                <img src={selectedProduct.image} className="w-12 h-12 rounded-lg object-cover" alt="" />
+                                <div>
+                                    <p className="font-bold text-gray-800 text-sm">{selectedProduct.name}</p>
+                                    <p className="text-christmasRed font-bold text-sm">{selectedProduct.price} {selectedProduct.currency}</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">Para quem é o presente?</label>
+                                    <select 
+                                        value={orderRecipient}
+                                        onChange={e => setOrderRecipient(e.target.value)}
+                                        className="w-full p-3 bg-white border-2 border-gray-200 rounded-xl font-bold text-gray-800 focus:border-christmasGreen outline-none"
+                                    >
+                                        <option value="">Selecione um Kamba...</option>
+                                        {group.participants.map(pid => (
+                                            <option key={pid} value={pid}>
+                                                {getParticipantName(pid)} {pid === user.id ? '(Eu mesmo)' : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                                        <Check size={12} /> A foto do perfil será enviada para personalização.
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1">Observações (Tamanho, Cor, etc)</label>
+                                    <textarea 
+                                        rows={3}
+                                        value={orderNotes}
+                                        onChange={e => setOrderNotes(e.target.value)}
+                                        className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-gray-200 text-gray-800 text-sm"
+                                        placeholder="Ex: Quero embrulho vermelho, tamanho M..."
+                                    />
+                                </div>
+
+                                <button 
+                                    onClick={sendOrderToWhatsApp}
+                                    disabled={!orderRecipient}
+                                    className="w-full bg-[#25D366] text-white py-3 rounded-xl font-bold shadow-md hover:bg-[#20bd5a] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <MessageCircle size={20} /> Enviar no WhatsApp
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         )}
 
@@ -409,7 +574,8 @@ export default function GroupView() {
                     <div className="space-y-6">
                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
                             <h3 className="font-bold text-gray-800 mb-4">Privacidade do Grupo</h3>
-                            <div className="flex items-center justify-between">
+                            
+                            <div className="flex items-center justify-between mb-6">
                                 <div>
                                     <p className="font-bold text-gray-700 text-sm">Aprovação Necessária</p>
                                     <p className="text-xs text-gray-500">Admin deve aprovar novos membros</p>
@@ -419,6 +585,21 @@ export default function GroupView() {
                                     className={`w-12 h-6 rounded-full transition-colors relative ${group.approvalRequired ? 'bg-christmasGreen' : 'bg-gray-300'}`}
                                 >
                                     <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${group.approvalRequired ? 'left-7' : 'left-1'}`} />
+                                </button>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="font-bold text-gray-700 text-sm">Visibilidade do Grupo</p>
+                                    <p className="text-xs text-gray-500">
+                                        {group.isPublic ? 'Público (Qualquer um pode ver/entrar)' : 'Privado (Apenas convite/código)'}
+                                    </p>
+                                </div>
+                                <button 
+                                    onClick={() => toggleGroupVisibility(group.id, !group.isPublic)}
+                                    className={`w-12 h-6 rounded-full transition-colors relative ${group.isPublic ? 'bg-christmasGreen' : 'bg-gray-300'}`}
+                                >
+                                    <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${group.isPublic ? 'left-7' : 'left-1'}`} />
                                 </button>
                             </div>
                         </div>

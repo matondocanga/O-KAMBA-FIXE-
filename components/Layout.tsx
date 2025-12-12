@@ -34,10 +34,10 @@ export default function Layout() {
 
       {/* Mobile Header */}
       <div className="md:hidden bg-christmasRed text-white p-4 flex justify-between items-center z-20 shadow-lg">
-         <div className="flex flex-col leading-none">
+         <Link to="/app/dashboard" className="flex flex-col leading-none hover:opacity-90 transition-opacity">
             <span className="font-header font-bold text-lg text-christmasGold">O KAMBA</span>
             <span className="font-header font-bold text-xl text-white">FIXE!</span>
-         </div>
+         </Link>
         <button onClick={toggleSidebar}>
           {isSidebarOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
@@ -50,10 +50,12 @@ export default function Layout() {
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="p-6 bg-christmasRed text-center hidden md:block">
-            <div className="flex flex-col leading-none py-4 border-4 border-christmasGold rounded-lg bg-christmasRed shadow-lg">
-                <span className="font-header font-bold text-2xl text-christmasGold drop-shadow-md">O KAMBA</span>
-                <span className="font-header font-bold text-3xl text-white drop-shadow-md">FIXE!</span>
-            </div>
+            <Link to="/app/dashboard" className="block">
+                <div className="flex flex-col leading-none py-4 border-4 border-christmasGold rounded-lg bg-christmasRed shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer">
+                    <span className="font-header font-bold text-2xl text-christmasGold drop-shadow-md">O KAMBA</span>
+                    <span className="font-header font-bold text-3xl text-white drop-shadow-md">FIXE!</span>
+                </div>
+            </Link>
         </div>
 
         <div className="p-4 flex items-center space-x-3 border-b border-gray-100 bg-gray-50">

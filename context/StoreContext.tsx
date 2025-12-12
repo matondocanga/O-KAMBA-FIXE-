@@ -41,6 +41,7 @@ interface StoreContextType {
   approveParticipant: (groupId: string, userId: string) => void;
   rejectParticipant: (groupId: string, userId: string) => void;
   toggleGroupApproval: (groupId: string, required: boolean) => void;
+  toggleGroupVisibility: (groupId: string, isPublic: boolean) => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -51,6 +52,49 @@ export const useStore = () => {
     throw new Error('useStore must be used within a StoreProvider');
   }
   return context;
+};
+
+// --- ANGOLAN NAME GENERATOR ---
+const ANGOLAN_PREFIXES = [
+  "Os Kambas", "União", "Estrelas", "Guerreiros", "Filhos", "Banda", "Grupo", "Amigos"
+];
+const ANGOLAN_ICONS = [
+  "da Palanca Negra", "do Imbondeiro", "da Rainha Ginga", "do Pensador", 
+  "de Kalandula", "da Muxima", "do Semba", "da Kizomba", 
+  "do Kuduro", "da Welwitschia", "do Kilamba", "da Serra da Leba",
+  "do Mussulo", "do Maiombe", "do Mufete"
+];
+const ANGOLAN_SUFFIXES = [
+  "Fixe", "Solidário", "do Natal", "da Paz", "Brilhante", "Vitorioso", "da Banda", "Angolano"
+];
+
+const generateAngolanGroupName = (existingGroups: Group[]): string => {
+  let name = "";
+  let isUnique = false;
+  let attempts = 0;
+
+  while (!isUnique && attempts < 50) {
+    const prefix = ANGOLAN_PREFIXES[Math.floor(Math.random() * ANGOLAN_PREFIXES.length)];
+    const icon = ANGOLAN_ICONS[Math.floor(Math.random() * ANGOLAN_ICONS.length)];
+    
+    // 50% chance of adding a suffix for more variety
+    const useSuffix = Math.random() > 0.5;
+    const suffix = useSuffix ? ` ${ANGOLAN_SUFFIXES[Math.floor(Math.random() * ANGOLAN_SUFFIXES.length)]}` : "";
+
+    name = `${prefix} ${icon}${suffix}`;
+    
+    // Check uniqueness
+    const exists = existingGroups.some(g => g.name === name);
+    if (!exists) isUnique = true;
+    attempts++;
+  }
+
+  // Fallback if random generation fails to find unique name
+  if (!isUnique) {
+    name = `Kambas de Natal ${Date.now().toString().slice(-4)}`;
+  }
+  
+  return name;
 };
 
 export const StoreProvider = ({ children }: { children?: ReactNode }) => {
@@ -157,21 +201,30 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
       setGroups(updatedGroups);
   };
 
+  const toggleGroupVisibility = (groupId: string, isPublic: boolean) => {
+      const updatedGroups = groups.map(g => 
+          g.id === groupId ? { ...g, isPublic: isPublic } : g
+      );
+      setGroups(updatedGroups);
+  };
+
   const joinPublicQueue = () => {
     setQueueCount(prev => prev + 1);
     // Simulate finding a match
     setTimeout(() => {
         if (user) {
+            const randomName = generateAngolanGroupName(groups);
+            
             const newGroup: Group = {
                 id: `g-public-${Date.now()}`,
-                name: "Esquadrão Público de Natal 🎄",
-                description: "Grupo automático para diversão rápida!",
+                name: randomName,
+                description: "Grupo automático criado pelo Kamba Fixe! Divirtam-se!",
                 adminId: user.id, // User becomes admin by chance
                 isPublic: true,
                 approvalRequired: false,
                 maxMembers: 4,
                 giftValueLimit: 5000,
-                code: "AUTO24",
+                code: Math.random().toString(36).substring(2, 8).toUpperCase(),
                 createdAt: new Date().toISOString(),
                 participants: [user.id, 'bot-1', 'bot-2', 'bot-3'], // Simulate others
                 pendingParticipants: [],
@@ -250,7 +303,8 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
       updateActivity,
       approveParticipant,
       rejectParticipant,
-      toggleGroupApproval
+      toggleGroupApproval,
+      toggleGroupVisibility
     }}>
       {children}
     </StoreContext.Provider>
