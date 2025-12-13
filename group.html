@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grupo - O KAMBA FIXE!</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./css/style.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        christmasRed: '#C62828',
+                        christmasGreen: '#2E7D32',
+                        christmasGold: '#D4AF37',
+                    },
+                    fontFamily: {
+                        header: ['Fredoka', 'sans-serif'],
+                        body: ['Nunito', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 font-body pb-20">
+    
+    <!-- Mobile Header -->
+    <div class="bg-white p-4 sticky top-0 z-30 shadow-sm flex items-center gap-2">
+        <a href="dashboard.html" class="text-gray-600">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </a>
+        <h1 id="groupNameHeader" class="text-lg font-bold font-header truncate">Carregando...</h1>
+    </div>
+
+    <!-- Group Content -->
+    <div class="max-w-4xl mx-auto p-4 md:p-8 space-y-4">
+        
+        <!-- Info Card -->
+        <div class="bg-white rounded-3xl p-6 shadow-sm border-t-4 border-christmasRed">
+            <h1 id="groupNameHero" class="text-2xl font-bold font-header text-gray-800">...</h1>
+            <div class="flex items-center gap-2 mt-1 mb-4">
+                <span class="text-sm text-gray-500">Código:</span>
+                <span id="groupCode" class="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-800 font-bold select-all text-sm">...</span>
+            </div>
+
+            <!-- Reveal Card -->
+            <div id="revealCard" class="hidden mt-6 bg-gradient-to-r from-christmasGreen to-green-800 rounded-2xl p-6 text-white text-center shadow-lg relative overflow-hidden">
+                <div class="relative z-10">
+                    <p class="opacity-80 text-sm font-medium mb-1">O seu amigo oculto é...</p>
+                    <h2 id="revealName" class="text-3xl font-header font-bold animate-pulse">...</h2>
+                    <button onclick="switchTab('shop')" class="inline-block mt-4 bg-white text-christmasGreen px-4 py-2 rounded-xl font-bold text-sm hover:bg-gray-100 transition-colors">
+                        Encontrar Presente
+                    </button>
+                </div>
+            </div>
+
+            <!-- Admin Action -->
+            <div id="adminZone" class="hidden mt-4 p-4 bg-red-50 rounded-2xl border border-red-100 flex justify-between items-center">
+                <span class="font-bold text-christmasRed">Zona do Admin</span>
+                <button onclick="runDraw()" class="bg-christmasRed text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md">Realizar Sorteio</button>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100 overflow-x-auto gap-2 no-scrollbar">
+            <button onclick="switchTab('info')" id="tab-info" class="nav-tab shrink-0 px-4 py-3 text-sm font-bold rounded-xl transition-all whitespace-nowrap bg-christmasRed text-white shadow-md">
+                Participantes
+            </button>
+            <button onclick="switchTab('chat')" id="tab-chat" class="nav-tab shrink-0 px-4 py-3 text-sm font-bold rounded-xl transition-all whitespace-nowrap text-gray-500 hover:bg-gray-50">
+                Chat
+            </button>
+            <button onclick="switchTab('activities')" id="tab-activities" class="nav-tab shrink-0 px-4 py-3 text-sm font-bold rounded-xl transition-all whitespace-nowrap text-gray-500 hover:bg-gray-50">
+                Atividades
+            </button>
+            <button onclick="switchTab('shop')" id="tab-shop" class="nav-tab shrink-0 px-4 py-3 text-sm font-bold rounded-xl transition-all whitespace-nowrap text-gray-500 hover:bg-gray-50">
+                Loja
+            </button>
+            <button onclick="switchTab('settings')" id="tab-settings" class="nav-tab shrink-0 px-4 py-3 text-sm font-bold rounded-xl transition-all whitespace-nowrap text-gray-500 hover:bg-gray-50">
+                Config
+            </button>
+        </div>
+
+        <!-- TAB CONTENTS -->
+        
+        <!-- Info Tab -->
+        <div id="content-info" class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 min-h-[400px]">
+            <h3 class="font-bold text-gray-800 mb-4">Participantes</h3>
+            <div id="participantsList" class="space-y-3"></div>
+        </div>
+
+        <!-- Chat Tab -->
+        <div id="content-chat" class="bg-white rounded-3xl shadow-sm border border-gray-100 flex flex-col h-[500px] hidden">
+            <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-50/50">
+                <!-- Messages -->
+            </div>
+            <form id="chatForm" class="p-3 border-t bg-white flex gap-2 rounded-b-3xl">
+                <input type="text" id="msgInput" class="flex-1 bg-gray-100 rounded-xl px-4 py-3 border-0 focus:ring-2 focus:ring-christmasRed outline-none" placeholder="Digite uma mensagem...">
+                <button type="submit" class="bg-christmasRed text-white p-3 rounded-xl hover:bg-red-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </button>
+            </form>
+        </div>
+
+        <!-- Activities Tab -->
+        <div id="content-activities" class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 min-h-[400px] hidden">
+            <div id="gamesMenu" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button onclick="startGame('quiz')" class="bg-blue-50 p-5 rounded-2xl border border-blue-100 text-left hover:bg-blue-100">
+                    <h3 class="font-bold text-blue-900">Quiz de Natal</h3>
+                    <p class="text-xs text-blue-700">Teste seus conhecimentos</p>
+                </button>
+                <button onclick="startGame('anagram')" class="bg-orange-50 p-5 rounded-2xl border border-orange-100 text-left hover:bg-orange-100">
+                    <h3 class="font-bold text-orange-900">Anagrama</h3>
+                    <p class="text-xs text-orange-700">Desembaralhe</p>
+                </button>
+            </div>
+            <div id="activeGameContainer" class="hidden mt-4">
+                <button onclick="closeGame()" class="mb-4 text-sm font-bold text-gray-500">← Voltar</button>
+                <div id="gameViewport"></div>
+            </div>
+        </div>
+
+        <!-- Shop Tab -->
+        <div id="content-shop" class="bg-white rounded-3xl shadow-sm border border-gray-100 p-4 min-h-[400px] hidden">
+            <div class="bg-white p-4 rounded-2xl border border-christmasGold shadow-sm mb-6 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-christmasGold flex items-center justify-center text-white font-bold">MY</div>
+                <div>
+                    <h3 class="font-bold">Macro Yetu</h3>
+                    <p class="text-xs text-green-600 font-bold">Parceiro Oficial</p>
+                </div>
+            </div>
+            <div id="productsGrid" class="grid grid-cols-2 gap-3"></div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="content-settings" class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 min-h-[400px] hidden">
+            <div id="adminSettings" class="hidden space-y-6">
+                <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                    <h3 class="font-bold text-gray-800 mb-4">Privacidade</h3>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-sm font-bold">Aprovação Necessária</span>
+                        <button onclick="toggleApproval()" id="btnApproval" class="w-12 h-6 rounded-full bg-gray-300 relative transition-colors">
+                            <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-all"></div>
+                        </button>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-bold">Grupo Público</span>
+                        <button onclick="togglePublic()" id="btnPublic" class="w-12 h-6 rounded-full bg-gray-300 relative transition-colors">
+                            <div class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-all"></div>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="pendingListContainer" class="hidden bg-white border-2 border-dashed border-gray-200 p-4 rounded-xl">
+                    <h3 class="font-bold text-gray-800 mb-2">Solicitações Pendentes</h3>
+                    <div id="pendingList" class="space-y-2"></div>
+                </div>
+            </div>
+            <p id="notAdminMsg" class="hidden text-center text-gray-500 mt-10">Apenas o administrador pode alterar configurações.</p>
+        </div>
+
+    </div>
+
+    <!-- Shop Modal -->
+    <div id="shopModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 hidden backdrop-blur-sm">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-md animate-in fade-in zoom-in duration-200 relative">
+            <button onclick="document.getElementById('shopModal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400">X</button>
+            <h3 class="text-xl font-bold font-header text-gray-800 mb-1">Confirmar Pedido</h3>
+            <p id="productNameModal" class="text-christmasRed font-bold mb-4"></p>
+            
+            <div class="space-y-4">
+                <select id="orderRecipient" class="w-full p-3 bg-white border-2 border-gray-200 rounded-xl font-bold"></select>
+                <textarea id="orderNotes" rows="3" class="w-full p-3 bg-gray-50 rounded-xl" placeholder="Observações..."></textarea>
+                <button onclick="sendWhatsApp()" class="w-full bg-[#25D366] text-white py-3 rounded-xl font-bold">Enviar no WhatsApp</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="./js/state.js"></script>
+    <script src="./js/group.js"></script>
+</body>
+</html>

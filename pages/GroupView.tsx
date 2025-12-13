@@ -23,6 +23,8 @@ const QuizGame = () => {
     const [currentQ, setCurrentQ] = useState(0);
     const [score, setScore] = useState(0);
     const [finished, setFinished] = useState(false);
+    const [selectedOpt, setSelectedOpt] = useState<number | null>(null);
+    const [isProcessing, setIsProcessing] = useState(false);
     
     const questions = [
         { q: "Onde o Papai Noel vive?", options: ["Luanda", "Pólo Norte", "Huambo", "Benguela"], ans: 1 },
@@ -38,16 +40,30 @@ const QuizGame = () => {
     ];
 
     const handleAnswer = (idx: number) => {
-        if (idx === questions[currentQ].ans) setScore(score + 1);
-        if (currentQ < questions.length - 1) setCurrentQ(currentQ + 1);
-        else setFinished(true);
+        if (isProcessing) return; // Prevent double clicks
+        
+        setIsProcessing(true);
+        setSelectedOpt(idx);
+
+        // Visual delay to show selection before moving on
+        setTimeout(() => {
+            if (idx === questions[currentQ].ans) setScore(prev => prev + 1);
+            
+            if (currentQ < questions.length - 1) {
+                setCurrentQ(prev => prev + 1);
+                setSelectedOpt(null); // Reset selection for next question
+            } else {
+                setFinished(true);
+            }
+            setIsProcessing(false);
+        }, 500);
     };
 
     if (finished) return (
         <div className="text-center p-6 bg-green-50 rounded-xl">
             <h3 className="text-xl font-bold text-christmasGreen mb-2">Quiz Concluído!</h3>
             <p className="text-gray-800">Sua pontuação: {score} / {questions.length}</p>
-            <button onClick={() => {setFinished(false); setCurrentQ(0); setScore(0)}} className="mt-4 bg-christmasRed text-white px-4 py-2 rounded-lg font-bold">Jogar Novamente</button>
+            <button onClick={() => {setFinished(false); setCurrentQ(0); setScore(0); setSelectedOpt(null);}} className="mt-4 bg-christmasRed text-white px-4 py-2 rounded-lg font-bold">Jogar Novamente</button>
         </div>
     );
 
@@ -59,11 +75,26 @@ const QuizGame = () => {
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-6">{questions[currentQ].q}</h3>
             <div className="grid gap-2">
-                {questions[currentQ].options.map((opt, idx) => (
-                    <button key={idx} onClick={() => handleAnswer(idx)} className="p-3 bg-gray-50 hover:bg-christmasGold/20 text-gray-800 rounded-lg text-left font-medium border border-gray-200 transition-colors">
-                        {opt}
-                    </button>
-                ))}
+                {questions[currentQ].options.map((opt, idx) => {
+                    // Logic to style buttons based on state
+                    let btnClass = "p-3 rounded-lg text-left font-medium border transition-colors ";
+                    if (selectedOpt === idx) {
+                        btnClass += "bg-christmasGold text-white border-christmasGold";
+                    } else {
+                        btnClass += "bg-gray-50 hover:bg-gray-100 text-gray-800 border-gray-200";
+                    }
+
+                    return (
+                        <button 
+                            key={idx} 
+                            onClick={() => handleAnswer(idx)} 
+                            disabled={isProcessing}
+                            className={btnClass}
+                        >
+                            {opt}
+                        </button>
+                    );
+                })}
             </div>
         </div>
     );
@@ -75,7 +106,7 @@ const AnagramGame = () => {
         { scrambled: "ETNESERP", real: "PRESENTE" },
         { scrambled: "AILIMAF", real: "FAMILIA" },
         { scrambled: "ALOBRA", real: "ARVORE" },
-        { scrambled: "ONAVONA", real: "ANONOVO" }, // Simplificado sem espaço para o jogo
+        { scrambled: "ONAVONA", real: "ANONOVO" }, 
         { scrambled: "ALEERST", real: "ESTRELA" },
         { scrambled: "ANER", real: "RENA" },
         { scrambled: "OIGAM", real: "AMIGO" },
@@ -87,7 +118,6 @@ const AnagramGame = () => {
     const [msg, setMsg] = useState("");
 
     const check = () => {
-        // Remove spaces for comparison if needed, currently works on direct match
         if (input.toUpperCase().replace(/\s/g, '') === words[idx].real) {
             setMsg("Correto! 🎉");
             setTimeout(() => {
@@ -169,9 +199,7 @@ export default function GroupView() {
 
   // User Lookup Helpers
   const getParticipant = (id: string) => {
-     // In real app, search in global user list. Mocking here.
      if (id === user.id) return user;
-     // Return dummy user for others
      return { id, name: id.startsWith('bot') ? `Elfo ${id.split('-')[1]}` : 'Kamba Amigo', avatarUrl: `https://ui-avatars.com/api/?name=${id}&background=random` };
   };
 
@@ -207,7 +235,6 @@ export default function GroupView() {
   // --- ORDER VIA WHATSAPP LOGIC ---
   const handleBuyClick = (product: Product) => {
       setSelectedProduct(product);
-      // Auto select secret santa receiver if known
       if (myReceiverId) setOrderRecipient(myReceiverId);
       else setOrderRecipient(group.participants.find(p => p !== user.id) || '');
   };
@@ -216,16 +243,21 @@ export default function GroupView() {
       if (!selectedProduct) return;
       const recipientUser = getParticipant(orderRecipient);
       
-      const message = `*Olá ${VENDOR.name}!* 👋%0A` +
-        `Quero encomendar um presente pelo App *O KAMBA FIXE!* 🎁%0A%0A` +
-        `🛍️ *Produto:* ${selectedProduct.name}%0A` +
-        `💰 *Valor:* ${selectedProduct.price} ${selectedProduct.currency}%0A%0A` +
-        `👤 *Para o Kamba:* ${recipientUser.name}%0A` +
-        `🖼️ *Foto para Personalizar:* ${recipientUser.avatarUrl || 'Sem foto'}%0A%0A` +
-        `📝 *Minhas Observações:* ${orderNotes || 'Sem observações'}%0A%0A` +
+      const rawMessage = `*Olá ${VENDOR.name}!* 👋\n` +
+        `Quero encomendar um presente pelo App *O KAMBA FIXE!* 🎁\n\n` +
+        `🛍️ *Produto:* ${selectedProduct.name}\n` +
+        `💰 *Valor:* ${selectedProduct.price} ${selectedProduct.currency}\n\n` +
+        `👤 *Para o Kamba:* ${recipientUser.name}\n` +
+        `🖼️ *Foto para Personalizar:* ${recipientUser.avatarUrl || 'Sem foto'}\n\n` +
+        `📝 *Minhas Observações:* ${orderNotes ? orderNotes : 'Sem observações'}\n\n` +
         `Aguardo confirmação do pagamento!`;
 
-      window.open(`https://wa.me/${VENDOR.phone}?text=${message}`, '_blank');
+      // Use encodeURIComponent to correctly handle spaces, newlines, and special characters from user input
+      const whatsappUrl = `https://wa.me/${VENDOR.phone}?text=${encodeURIComponent(rawMessage)}`;
+
+      window.open(whatsappUrl, '_blank');
+      
+      // Close modal after sending
       setSelectedProduct(null);
       setOrderNotes('');
   };
@@ -298,22 +330,22 @@ export default function GroupView() {
         )}
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
-        <button onClick={() => setActiveTab('info')} className={`flex-1 py-3 px-2 text-sm font-bold rounded-xl transition-all whitespace-nowrap flex justify-center gap-2 ${activeTab === 'info' ? 'bg-christmasRed text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
-            <UserIcon size={18} /> <span className="hidden sm:inline">Participantes</span>
+      {/* Navigation Tabs - Fixed for Mobile Overlap */}
+      <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100 overflow-x-auto gap-2 no-scrollbar">
+        <button onClick={() => setActiveTab('info')} className={`shrink-0 w-auto px-4 py-3 text-sm font-bold rounded-xl transition-all whitespace-nowrap flex justify-center gap-2 ${activeTab === 'info' ? 'bg-christmasRed text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
+            <UserIcon size={18} /> <span>Participantes</span>
         </button>
-        <button onClick={() => setActiveTab('chat')} className={`flex-1 py-3 px-2 text-sm font-bold rounded-xl transition-all whitespace-nowrap flex justify-center gap-2 ${activeTab === 'chat' ? 'bg-christmasRed text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
-            <MessageCircle size={18} /> Chat
+        <button onClick={() => setActiveTab('chat')} className={`shrink-0 w-auto px-4 py-3 text-sm font-bold rounded-xl transition-all whitespace-nowrap flex justify-center gap-2 ${activeTab === 'chat' ? 'bg-christmasRed text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
+            <MessageCircle size={18} /> <span>Chat</span>
         </button>
-        <button onClick={() => setActiveTab('activities')} className={`flex-1 py-3 px-2 text-sm font-bold rounded-xl transition-all whitespace-nowrap flex justify-center gap-2 ${activeTab === 'activities' ? 'bg-christmasRed text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
-            <Gamepad2 size={18} /> Atividades
+        <button onClick={() => setActiveTab('activities')} className={`shrink-0 w-auto px-4 py-3 text-sm font-bold rounded-xl transition-all whitespace-nowrap flex justify-center gap-2 ${activeTab === 'activities' ? 'bg-christmasRed text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
+            <Gamepad2 size={18} /> <span>Atividades</span>
         </button>
-        <button onClick={() => setActiveTab('shop')} className={`flex-1 py-3 px-2 text-sm font-bold rounded-xl transition-all whitespace-nowrap flex justify-center gap-2 ${activeTab === 'shop' ? 'bg-christmasRed text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
-            <ShoppingBag size={18} /> Loja
+        <button onClick={() => setActiveTab('shop')} className={`shrink-0 w-auto px-4 py-3 text-sm font-bold rounded-xl transition-all whitespace-nowrap flex justify-center gap-2 ${activeTab === 'shop' ? 'bg-christmasRed text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
+            <ShoppingBag size={18} /> <span>Loja</span>
         </button>
-        <button onClick={() => setActiveTab('settings')} className={`flex-1 py-3 px-2 text-sm font-bold rounded-xl transition-all whitespace-nowrap flex justify-center gap-2 ${activeTab === 'settings' ? 'bg-christmasRed text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
-            <Settings size={18} /> <span className="hidden sm:inline">Config</span>
+        <button onClick={() => setActiveTab('settings')} className={`shrink-0 w-auto px-4 py-3 text-sm font-bold rounded-xl transition-all whitespace-nowrap flex justify-center gap-2 ${activeTab === 'settings' ? 'bg-christmasRed text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
+            <Settings size={18} /> <span>Config</span>
         </button>
       </div>
 
