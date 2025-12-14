@@ -1,18 +1,32 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, Group, Message, Product, Activity } from '../types';
+import { User, Group, Message, Product } from '../types';
+import { 
+    auth, 
+    googleProvider, 
+    db 
+} from '../services/firebase';
+import { 
+    signInWithPopup, 
+    signOut, 
+    onAuthStateChanged 
+} from 'firebase/auth';
+import { 
+    collection, 
+    addDoc, 
+    query, 
+    where, 
+    onSnapshot, 
+    doc, 
+    setDoc, 
+    updateDoc, 
+    getDoc, 
+    arrayUnion,
+    getDocs,
+    orderBy,
+    arrayRemove
+} from 'firebase/firestore';
 
-// Mock Data
-const MOCK_USER: User = {
-  id: 'user-1',
-  name: 'João Manuel',
-  email: 'joao@example.com',
-  avatarUrl: 'https://picsum.photos/200',
-  clothingSize: { shirt: 'L', pants: '40', shoes: '42' },
-  preferences: 'Gadgets tecnológicos, Livros, Café',
-  dislikes: 'Meias, Chaveiros',
-  message: 'Ho ho ho! Mal posso esperar!',
-};
-
+// --- MOCK PRODUCTS (Mantemos os produtos fixos por enquanto, pois é uma loja estática) ---
 const MOCK_PRODUCTS: Product[] = [
   { id: 'p1', name: 'Grãos de Café de Angola', price: 5000, currency: 'Kz', image: 'https://picsum.photos/300/300?random=1', link: '#' },
   { id: 'p2', name: 'Caneca Personalizada "Kamba"', price: 2500, currency: 'Kz', image: 'https://picsum.photos/300/300?random=2', link: '#' },
@@ -28,11 +42,12 @@ interface StoreContextType {
   messages: Message[];
   products: Product[];
   queueCount: number;
+  loading: boolean;
   login: () => void;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
   createGroup: (name: string, desc: string, isPublic: boolean, limit: number) => void;
-  joinGroup: (code: string) => boolean;
+  joinGroup: (code: string) => Promise<boolean>;
   joinPublicQueue: () => void;
   startDraw: (groupId: string) => void;
   sendMessage: (groupId: string, text: string) => void;
@@ -55,46 +70,16 @@ export const useStore = () => {
 };
 
 // --- ANGOLAN NAME GENERATOR ---
-const ANGOLAN_PREFIXES = [
-  "Os Kambas", "União", "Estrelas", "Guerreiros", "Filhos", "Banda", "Grupo", "Amigos"
-];
-const ANGOLAN_ICONS = [
-  "da Palanca Negra", "do Imbondeiro", "da Rainha Ginga", "do Pensador", 
-  "de Kalandula", "da Muxima", "do Semba", "da Kizomba", 
-  "do Kuduro", "da Welwitschia", "do Kilamba", "da Serra da Leba",
-  "do Mussulo", "do Maiombe", "do Mufete"
-];
-const ANGOLAN_SUFFIXES = [
-  "Fixe", "Solidário", "do Natal", "da Paz", "Brilhante", "Vitorioso", "da Banda", "Angolano"
-];
+const ANGOLAN_PREFIXES = ["Os Kambas", "União", "Estrelas", "Guerreiros", "Filhos", "Banda", "Grupo", "Amigos"];
+const ANGOLAN_ICONS = ["da Palanca Negra", "do Imbondeiro", "da Rainha Ginga", "do Pensador", "de Kalandula", "da Muxima", "do Semba", "da Kizomba", "do Kuduro", "da Welwitschia", "do Kilamba", "da Serra da Leba", "do Mussulo", "do Maiombe", "do Mufete"];
+const ANGOLAN_SUFFIXES = ["Fixe", "Solidário", "do Natal", "da Paz", "Brilhante", "Vitorioso", "da Banda", "Angolano"];
 
-const generateAngolanGroupName = (existingGroups: Group[]): string => {
-  let name = "";
-  let isUnique = false;
-  let attempts = 0;
-
-  while (!isUnique && attempts < 50) {
+const generateAngolanGroupName = (): string => {
     const prefix = ANGOLAN_PREFIXES[Math.floor(Math.random() * ANGOLAN_PREFIXES.length)];
     const icon = ANGOLAN_ICONS[Math.floor(Math.random() * ANGOLAN_ICONS.length)];
-    
-    // 50% chance of adding a suffix for more variety
     const useSuffix = Math.random() > 0.5;
     const suffix = useSuffix ? ` ${ANGOLAN_SUFFIXES[Math.floor(Math.random() * ANGOLAN_SUFFIXES.length)]}` : "";
-
-    name = `${prefix} ${icon}${suffix}`;
-    
-    // Check uniqueness
-    const exists = existingGroups.some(g => g.name === name);
-    if (!exists) isUnique = true;
-    attempts++;
-  }
-
-  // Fallback if random generation fails to find unique name
-  if (!isUnique) {
-    name = `Kambas de Natal ${Date.now().toString().slice(-4)}`;
-  }
-  
-  return name;
+    return `${prefix} ${icon}${suffix}`;
 };
 
 export const StoreProvider = ({ children }: { children?: ReactNode }) => {
@@ -102,36 +87,113 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
   const [groups, setGroups] = useState<Group[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [queueCount, setQueueCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  // Initialize with some data
+  // 1. Monitor Auth State
   useEffect(() => {
-    // Load local storage if we were real
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        if (firebaseUser) {
+            // Check if user exists in DB, if not create
+            const userRef = doc(db, "users", firebaseUser.uid);
+            const userSnap = await getDoc(userRef);
+
+            if (userSnap.exists()) {
+                setUser(userSnap.data() as User);
+            } else {
+                const newUser: User = {
+                    id: firebaseUser.uid,
+                    name: firebaseUser.displayName || 'Kamba Novo',
+                    email: firebaseUser.email || '',
+                    avatarUrl: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${firebaseUser.displayName}&background=random`,
+                    clothingSize: { shirt: '', pants: '', shoes: '' },
+                    preferences: '',
+                    dislikes: '',
+                    message: ''
+                };
+                await setDoc(userRef, newUser);
+                setUser(newUser);
+            }
+        } else {
+            setUser(null);
+        }
+        setLoading(false);
+    });
+    return () => unsubscribe();
   }, []);
 
-  const login = () => {
-    setUser(MOCK_USER);
+  // 2. Monitor Groups (Real-time)
+  useEffect(() => {
+    if (!user) {
+        setGroups([]);
+        return;
+    }
+
+    // Query groups where user is participant
+    const q = query(collection(db, "groups"), where("participants", "array-contains", user.id));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const loadedGroups = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Group));
+        setGroups(loadedGroups);
+    });
+    
+    return () => unsubscribe();
+  }, [user]);
+
+  // 3. Monitor Messages (Real-time)
+  useEffect(() => {
+    if (!user || groups.length === 0) {
+        setMessages([]);
+        return;
+    }
+    
+    // Simplificação para MVP: Carrega mensagens globais. 
+    // Em produção, isso seria otimizado para carregar apenas do grupo ativo.
+    const qMsg = query(collection(db, "messages"), orderBy("timestamp", "asc"));
+    const unsubMsg = onSnapshot(qMsg, (snapshot) => {
+        const msgs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Message));
+        // Filtra localmente apenas mensagens dos meus grupos
+        const groupIds = groups.map(g => g.id);
+        const myMsgs = msgs.filter(m => groupIds.includes(m.groupId));
+        setMessages(myMsgs);
+    });
+
+    return () => unsubMsg();
+  }, [groups, user]);
+
+  // --- ACTIONS ---
+
+  const login = async () => {
+    try {
+        await signInWithPopup(auth, googleProvider);
+    } catch (error) {
+        console.error("Login failed", error);
+        alert("Erro ao fazer login. Tente novamente.");
+    }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await signOut(auth);
     setUser(null);
   };
 
-  const updateUser = (updates: Partial<User>) => {
+  const updateUser = async (updates: Partial<User>) => {
     if (user) {
+      const userRef = doc(db, "users", user.id);
+      await updateDoc(userRef, updates);
+      // Local state updates automatically via onSnapshot/onAuthStateChanged logic effectively
       setUser({ ...user, ...updates });
     }
   };
 
-  const createGroup = (name: string, desc: string, isPublic: boolean, limit: number) => {
+  const createGroup = async (name: string, desc: string, isPublic: boolean, limit: number) => {
     if (!user) return;
-    const newGroup: Group = {
-      id: `g-${Date.now()}`,
+    
+    const newGroupData = {
       name,
       description: desc,
       adminId: user.id,
       isPublic,
-      approvalRequired: false, // Default false
-      maxMembers: 10,
+      approvalRequired: false,
+      maxMembers: 20,
       giftValueLimit: limit,
       code: Math.random().toString(36).substring(2, 8).toUpperCase(),
       createdAt: new Date().toISOString(),
@@ -140,108 +202,84 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
       pairings: {},
       status: 'recruiting',
     };
-    setGroups([...groups, newGroup]);
+
+    await addDoc(collection(db, "groups"), newGroupData);
   };
 
-  const joinGroup = (code: string) => {
+  const joinGroup = async (code: string) => {
     if (!user) return false;
-    const groupIndex = groups.findIndex(g => g.code === code);
-    if (groupIndex > -1) {
-      const updatedGroups = [...groups];
-      const group = updatedGroups[groupIndex];
-      
-      // Check if already in
-      if (group.participants.includes(user.id) || group.pendingParticipants.includes(user.id)) {
-          return true;
-      }
+    
+    // Find group by code
+    const q = query(collection(db, "groups"), where("code", "==", code));
+    const querySnapshot = await getDocs(q);
+    
+    if (querySnapshot.empty) return false;
 
-      if (group.approvalRequired) {
-          group.pendingParticipants.push(user.id);
-          alert("Pedido enviado! Aguarde a aprovação do Admin.");
-      } else {
-          group.participants.push(user.id);
-      }
-      setGroups(updatedGroups);
-      return true;
+    const groupDoc = querySnapshot.docs[0];
+    const groupData = groupDoc.data() as Group;
+    const groupRef = doc(db, "groups", groupDoc.id);
+
+    if (groupData.participants.includes(user.id)) return true;
+    if (groupData.pendingParticipants?.includes(user.id)) {
+        alert("Você já pediu para entrar.");
+        return true;
     }
-    return false;
+
+    if (groupData.approvalRequired) {
+        await updateDoc(groupRef, {
+            pendingParticipants: arrayUnion(user.id)
+        });
+        alert("Pedido enviado ao Admin!");
+    } else {
+        await updateDoc(groupRef, {
+            participants: arrayUnion(user.id)
+        });
+    }
+    return true;
   };
 
-  const approveParticipant = (groupId: string, userId: string) => {
-    const updatedGroups = groups.map(g => {
-        if (g.id === groupId) {
-            return {
-                ...g,
-                pendingParticipants: g.pendingParticipants.filter(id => id !== userId),
-                participants: [...g.participants, userId]
-            };
-        }
-        return g;
-    });
-    setGroups(updatedGroups);
+  const approveParticipant = async (groupId: string, userId: string) => {
+      const groupRef = doc(db, "groups", groupId);
+      await updateDoc(groupRef, {
+          participants: arrayUnion(userId),
+          pendingParticipants: arrayRemove(userId)
+      });
   };
 
-  const rejectParticipant = (groupId: string, userId: string) => {
-    const updatedGroups = groups.map(g => {
-        if (g.id === groupId) {
-            return {
-                ...g,
-                pendingParticipants: g.pendingParticipants.filter(id => id !== userId)
-            };
-        }
-        return g;
-    });
-    setGroups(updatedGroups);
+  const rejectParticipant = async (groupId: string, userId: string) => {
+      const groupRef = doc(db, "groups", groupId);
+      await updateDoc(groupRef, {
+          pendingParticipants: arrayRemove(userId)
+      });
   };
 
-  const toggleGroupApproval = (groupId: string, required: boolean) => {
-      const updatedGroups = groups.map(g => 
-          g.id === groupId ? { ...g, approvalRequired: required } : g
-      );
-      setGroups(updatedGroups);
+  const toggleGroupApproval = async (groupId: string, required: boolean) => {
+      const groupRef = doc(db, "groups", groupId);
+      await updateDoc(groupRef, { approvalRequired: required });
   };
 
-  const toggleGroupVisibility = (groupId: string, isPublic: boolean) => {
-      const updatedGroups = groups.map(g => 
-          g.id === groupId ? { ...g, isPublic: isPublic } : g
-      );
-      setGroups(updatedGroups);
+  const toggleGroupVisibility = async (groupId: string, isPublic: boolean) => {
+      const groupRef = doc(db, "groups", groupId);
+      await updateDoc(groupRef, { isPublic: isPublic });
   };
 
-  const joinPublicQueue = () => {
+  const joinPublicQueue = async () => {
+    if (!user) return;
     setQueueCount(prev => prev + 1);
-    // Simulate finding a match
-    setTimeout(() => {
-        if (user) {
-            const randomName = generateAngolanGroupName(groups);
-            
-            const newGroup: Group = {
-                id: `g-public-${Date.now()}`,
-                name: randomName,
-                description: "Grupo automático criado pelo Kamba Fixe! Divirtam-se!",
-                adminId: user.id, // User becomes admin by chance
-                isPublic: true,
-                approvalRequired: false,
-                maxMembers: 4,
-                giftValueLimit: 5000,
-                code: Math.random().toString(36).substring(2, 8).toUpperCase(),
-                createdAt: new Date().toISOString(),
-                participants: [user.id, 'bot-1', 'bot-2', 'bot-3'], // Simulate others
-                pendingParticipants: [],
-                pairings: {},
-                status: 'recruiting'
-            };
-            setGroups(prev => [...prev, newGroup]);
-            setQueueCount(0);
-        }
+    
+    // Simulating public match (In real app, backend cloud function handles this)
+    // Here we will just auto-create a group for them after delay
+    setTimeout(async () => {
+        const name = generateAngolanGroupName();
+        await createGroup(name, "Grupo Público Automático", true, 5000);
+        setQueueCount(0);
     }, 2000);
   };
 
-  const startDraw = (groupId: string) => {
+  const startDraw = async (groupId: string) => {
     const group = groups.find(g => g.id === groupId);
     if (!group) return;
     
-    // Simple pairing logic (Derangement)
     let participants = [...group.participants];
     // Shuffle
     for (let i = participants.length - 1; i > 0; i--) {
@@ -256,32 +294,31 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
         pairings[santa] = receiver;
     }
 
-    const updatedGroups = groups.map(g => 
-        g.id === groupId ? { ...g, pairings, status: 'drawn' as const } : g
-    );
-    setGroups(updatedGroups);
+    const groupRef = doc(db, "groups", groupId);
+    await updateDoc(groupRef, {
+        pairings,
+        status: 'drawn'
+    });
   };
 
-  const sendMessage = (groupId: string, text: string) => {
+  const sendMessage = async (groupId: string, text: string) => {
     if (!user) return;
-    const newMessage: Message = {
-      id: `m-${Date.now()}`,
-      groupId,
-      senderId: user.id,
-      senderName: user.name,
-      text,
-      timestamp: Date.now(),
-    };
-    setMessages(prev => [...prev, newMessage]);
+    
+    await addDoc(collection(db, "messages"), {
+        groupId,
+        senderId: user.id,
+        senderName: user.name,
+        text,
+        timestamp: Date.now()
+    });
   };
 
   const getGroupMessages = (groupId: string) => {
-    return messages.filter(m => m.groupId === groupId).sort((a,b) => a.timestamp - b.timestamp);
+    return messages.filter(m => m.groupId === groupId);
   };
 
   const updateActivity = (groupId: string, activityId: string, response: string) => {
-    // In a real app, we'd store activity state. 
-    console.log(`Updated activity ${activityId} in ${groupId} with ${response}`);
+    console.log("Activity update not implemented in DB yet");
   };
 
   return (
@@ -291,6 +328,7 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
       messages,
       products: MOCK_PRODUCTS,
       queueCount,
+      loading,
       login,
       logout,
       updateUser,
