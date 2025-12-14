@@ -5,26 +5,9 @@ import {
     googleProvider, 
     db 
 } from '../services/firebase';
-import { 
-    signInWithPopup, 
-    signOut, 
-    onAuthStateChanged 
-} from 'firebase/auth';
-import { 
-    collection, 
-    addDoc, 
-    query, 
-    where, 
-    onSnapshot, 
-    doc, 
-    setDoc, 
-    updateDoc, 
-    getDoc, 
-    arrayUnion,
-    getDocs,
-    orderBy,
-    arrayRemove
-} from 'firebase/firestore';
+import firebase from 'firebase/app';
+import 'firebase/auth';
+import 'firebase/firestore';
 
 // --- MOCK PRODUCTS (Mantemos os produtos fixos por enquanto, pois é uma loja estática) ---
 const MOCK_PRODUCTS: Product[] = [
@@ -91,13 +74,13 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
 
   // 1. Monitor Auth State
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
         if (firebaseUser) {
             // Check if user exists in DB, if not create
-            const userRef = doc(db, "users", firebaseUser.uid);
-            const userSnap = await getDoc(userRef);
+            const userRef = db.collection("users").doc(firebaseUser.uid);
+            const userSnap = await userRef.get();
 
-            if (userSnap.exists()) {
+            if (userSnap.exists) {
                 setUser(userSnap.data() as User);
             } else {
                 const newUser: User = {
@@ -110,7 +93,7 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
                     dislikes: '',
                     message: ''
                 };
-                await setDoc(userRef, newUser);
+                await userRef.set(newUser);
                 setUser(newUser);
             }
         } else {
@@ -128,9 +111,8 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
         return;
     }
 
-    // Query groups where user is participant
-    const q = query(collection(db, "groups"), where("participants", "array-contains", user.id));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const q = db.collection("groups").where("participants", "array-contains", user.id);
+    const unsubscribe = q.onSnapshot((snapshot) => {
         const loadedGroups = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Group));
         setGroups(loadedGroups);
     });
@@ -145,13 +127,15 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
         return;
     }
     
+    const groupIds = groups.map(g => g.id);
+    if (groupIds.length === 0) return;
+
     // Simplificação para MVP: Carrega mensagens globais. 
     // Em produção, isso seria otimizado para carregar apenas do grupo ativo.
-    const qMsg = query(collection(db, "messages"), orderBy("timestamp", "asc"));
-    const unsubMsg = onSnapshot(qMsg, (snapshot) => {
+    const qMsg = db.collection("messages").orderBy("timestamp", "asc");
+    const unsubMsg = qMsg.onSnapshot((snapshot) => {
         const msgs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Message));
         // Filtra localmente apenas mensagens dos meus grupos
-        const groupIds = groups.map(g => g.id);
         const myMsgs = msgs.filter(m => groupIds.includes(m.groupId));
         setMessages(myMsgs);
     });
@@ -163,7 +147,7 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
 
   const login = async () => {
     try {
-        await signInWithPopup(auth, googleProvider);
+        await auth.signInWithPopup(googleProvider);
     } catch (error) {
         console.error("Login failed", error);
         alert("Erro ao fazer login. Tente novamente.");
@@ -171,14 +155,14 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
   };
 
   const logout = async () => {
-    await signOut(auth);
+    await auth.signOut();
     setUser(null);
   };
 
   const updateUser = async (updates: Partial<User>) => {
     if (user) {
-      const userRef = doc(db, "users", user.id);
-      await updateDoc(userRef, updates);
+      const userRef = db.collection("users").doc(user.id);
+      await userRef.update(updates);
       // Local state updates automatically via onSnapshot/onAuthStateChanged logic effectively
       setUser({ ...user, ...updates });
     }
@@ -203,21 +187,21 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
       status: 'recruiting',
     };
 
-    await addDoc(collection(db, "groups"), newGroupData);
+    await db.collection("groups").add(newGroupData);
   };
 
   const joinGroup = async (code: string) => {
     if (!user) return false;
     
     // Find group by code
-    const q = query(collection(db, "groups"), where("code", "==", code));
-    const querySnapshot = await getDocs(q);
+    const q = db.collection("groups").where("code", "==", code);
+    const querySnapshot = await q.get();
     
     if (querySnapshot.empty) return false;
 
     const groupDoc = querySnapshot.docs[0];
     const groupData = groupDoc.data() as Group;
-    const groupRef = doc(db, "groups", groupDoc.id);
+    const groupRef = db.collection("groups").doc(groupDoc.id);
 
     if (groupData.participants.includes(user.id)) return true;
     if (groupData.pendingParticipants?.includes(user.id)) {
@@ -226,41 +210,41 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
     }
 
     if (groupData.approvalRequired) {
-        await updateDoc(groupRef, {
-            pendingParticipants: arrayUnion(user.id)
+        await groupRef.update({
+            pendingParticipants: firebase.firestore.FieldValue.arrayUnion(user.id)
         });
         alert("Pedido enviado ao Admin!");
     } else {
-        await updateDoc(groupRef, {
-            participants: arrayUnion(user.id)
+        await groupRef.update({
+            participants: firebase.firestore.FieldValue.arrayUnion(user.id)
         });
     }
     return true;
   };
 
   const approveParticipant = async (groupId: string, userId: string) => {
-      const groupRef = doc(db, "groups", groupId);
-      await updateDoc(groupRef, {
-          participants: arrayUnion(userId),
-          pendingParticipants: arrayRemove(userId)
+      const groupRef = db.collection("groups").doc(groupId);
+      await groupRef.update({
+          participants: firebase.firestore.FieldValue.arrayUnion(userId),
+          pendingParticipants: firebase.firestore.FieldValue.arrayRemove(userId)
       });
   };
 
   const rejectParticipant = async (groupId: string, userId: string) => {
-      const groupRef = doc(db, "groups", groupId);
-      await updateDoc(groupRef, {
-          pendingParticipants: arrayRemove(userId)
+      const groupRef = db.collection("groups").doc(groupId);
+      await groupRef.update({
+          pendingParticipants: firebase.firestore.FieldValue.arrayRemove(userId)
       });
   };
 
   const toggleGroupApproval = async (groupId: string, required: boolean) => {
-      const groupRef = doc(db, "groups", groupId);
-      await updateDoc(groupRef, { approvalRequired: required });
+      const groupRef = db.collection("groups").doc(groupId);
+      await groupRef.update({ approvalRequired: required });
   };
 
   const toggleGroupVisibility = async (groupId: string, isPublic: boolean) => {
-      const groupRef = doc(db, "groups", groupId);
-      await updateDoc(groupRef, { isPublic: isPublic });
+      const groupRef = db.collection("groups").doc(groupId);
+      await groupRef.update({ isPublic: isPublic });
   };
 
   const joinPublicQueue = async () => {
@@ -294,8 +278,8 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
         pairings[santa] = receiver;
     }
 
-    const groupRef = doc(db, "groups", groupId);
-    await updateDoc(groupRef, {
+    const groupRef = db.collection("groups").doc(groupId);
+    await groupRef.update({
         pairings,
         status: 'drawn'
     });
@@ -304,7 +288,7 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
   const sendMessage = async (groupId: string, text: string) => {
     if (!user) return;
     
-    await addDoc(collection(db, "messages"), {
+    await db.collection("messages").add({
         groupId,
         senderId: user.id,
         senderName: user.name,

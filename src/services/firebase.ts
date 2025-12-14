@@ -3,42 +3,35 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
-// --- CONFIGURAÇÃO ROBUSTA DO FIREBASE ---
-// Tenta ler do ambiente. Se falhar, usa valores placeholder para não travar o app na inicialização.
-const env = (import.meta as any).env || {};
-
+// --- CONFIGURAÇÃO DO FIREBASE (MODULAR) ---
+// Chaves restauradas diretamente para garantir funcionamento imediato
 const firebaseConfig = {
-  apiKey: env.VITE_FIREBASE_API_KEY || "AIzaSy_DUMMY_KEY_PARA_EVITAR_CRASH_NA_INICIALIZACAO",
-  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || "kamba-fixe-dev.firebaseapp.com",
-  projectId: env.VITE_FIREBASE_PROJECT_ID || "kamba-fixe-dev",
-  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || "kamba-fixe-dev.appspot.com",
-  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || "000000000000",
-  appId: env.VITE_FIREBASE_APP_ID || "1:000000000000:web:0000000000000000000000",
-  measurementId: env.VITE_FIREBASE_MEASUREMENT_ID
+  apiKey: "AIzaSyCOnuw9R4-FhoAhGgB37eihwO8WPZ8uXYg",
+  authDomain: "o-kamba-fixe.firebaseapp.com",
+  projectId: "o-kamba-fixe",
+  storageBucket: "o-kamba-fixe.firebasestorage.app",
+  messagingSenderId: "1053297267860",
+  appId: "1:1053297267860:web:ff72dbae9f29f66d8e5081",
+  measurementId: "G-3DLF5F2C73"
 };
 
-// Log de diagnóstico para ajudar a depurar se o login falhar
-if (!env.VITE_FIREBASE_API_KEY) {
-    console.warn("⚠️ AVISO: Chaves do Firebase não encontradas no .env");
-    console.warn("O app foi inicializado com chaves de teste para permitir a renderização da tela.");
-    console.warn("O login e o banco de dados NÃO funcionarão até que as chaves reais sejam configuradas.");
-} else {
-    console.log("✅ Firebase Configurado com Project ID:", firebaseConfig.projectId);
-}
+console.log("🔥 Inicializando Firebase Modular...");
 
-// Inicializar Firebase
-// O try-catch aqui previne que uma config muito inválida trave o script inteiro
-let app;
-try {
-  app = initializeApp(firebaseConfig);
-} catch (e) {
-  console.error("Erro fatal ao inicializar Firebase:", e);
-}
+// Inicialização do App (Sintaxe V9+)
+const app = initializeApp(firebaseConfig);
 
-// Exportar serviços (podem ser undefined se a inicialização falhar, mas evita crash imediato)
-export const auth = app ? getAuth(app) : {} as any;
+// Exportação dos serviços modulares
+export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
-export const db = app ? getFirestore(app) : {} as any;
+export const db = getFirestore(app);
 
-// Inicializar Analytics apenas se suportado
-export const analytics = isSupported().then(yes => (yes && app) ? getAnalytics(app) : null);
+// Inicialização segura do Analytics
+let analytics = null;
+isSupported().then(yes => {
+  if (yes) {
+    analytics = getAnalytics(app);
+  }
+}).catch(err => console.error("Analytics não suportado:", err));
+
+export { analytics };
+export default app;

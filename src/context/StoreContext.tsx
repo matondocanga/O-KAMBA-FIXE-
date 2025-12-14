@@ -26,7 +26,7 @@ import {
     arrayRemove
 } from 'firebase/firestore';
 
-// --- MOCK PRODUCTS (Mantemos os produtos fixos por enquanto, pois é uma loja estática) ---
+// --- MOCK PRODUCTS ---
 const MOCK_PRODUCTS: Product[] = [
   { id: 'p1', name: 'Grãos de Café de Angola', price: 5000, currency: 'Kz', image: 'https://picsum.photos/300/300?random=1', link: '#' },
   { id: 'p2', name: 'Caneca Personalizada "Kamba"', price: 2500, currency: 'Kz', image: 'https://picsum.photos/300/300?random=2', link: '#' },
@@ -69,7 +69,7 @@ export const useStore = () => {
   return context;
 };
 
-// --- ANGOLAN NAME GENERATOR (Mantido) ---
+// --- ANGOLAN NAME GENERATOR ---
 const ANGOLAN_PREFIXES = ["Os Kambas", "União", "Estrelas", "Guerreiros", "Filhos", "Banda", "Grupo", "Amigos"];
 const ANGOLAN_ICONS = ["da Palanca Negra", "do Imbondeiro", "da Rainha Ginga", "do Pensador", "de Kalandula", "da Muxima", "do Semba", "da Kizomba", "do Kuduro", "da Welwitschia", "do Kilamba", "da Serra da Leba", "do Mussulo", "do Maiombe", "do Mufete"];
 const ANGOLAN_SUFFIXES = ["Fixe", "Solidário", "do Natal", "da Paz", "Brilhante", "Vitorioso", "da Banda", "Angolano"];
@@ -128,30 +128,11 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
         return;
     }
 
-    // Query groups where user is participant OR pending
-    // Firestore limitations: array-contains logic is simple. 
-    // We will listen to groups collection and filter client side for MVP or use simple queries.
-    // For Production: Better to store user's groupIDs in the user doc. 
-    // But for this size app, querying 'groups' where participants array-contains userId is fine.
-    
     const q = query(collection(db, "groups"), where("participants", "array-contains", user.id));
     const unsubscribe = onSnapshot(q, (snapshot) => {
         const loadedGroups = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Group));
-        
-        // Also need to fetch groups where user is PENDING (Firebase 'OR' queries are limited, so we might need a separate listener or just filter differently)
-        // For simplicity in this iteration, we primarily show groups we are IN. 
-        // If I am admin, I see my groups via this query too.
-        
-        // Let's create a secondary listener for Pending requests if needed, 
-        // OR simply rely on the fact that if I created the group, I am a participant.
-        // If I requested to join, I am in "pendingParticipants". 
-        // Querying for that:
-        
         setGroups(loadedGroups);
     });
-    
-    // Auxiliary listener for pending groups (Optional for MVP, let's stick to active groups first)
-    // To see groups I am pending in, we'd need: query(collection(db, "groups"), where("pendingParticipants", "array-contains", user.id))
     
     return () => unsubscribe();
   }, [user]);
@@ -163,38 +144,19 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
         return;
     }
     
-    // Listen to messages for all my groups
-    // Optimization: In a huge app, listen only to active tab group. 
-    // Here: Listen to all messages in the 'messages' collection where user is a member of the group? 
-    // No, simpler: Listen to messages where groupId is in my group list. 
-    // Firestore 'in' query limit is 10. 
-    // Better Strategy: Fetch messages only when opening a group view. 
-    // GLOBAL MESSAGE STATE is tricky. Let's load ALL messages for now (MVP) or just depend on `getGroupMessages` fetching on demand?
-    // The current UI expects `messages` to be available.
-    // Let's listen to the top 500 recent messages globally or per group.
-    
-    // REFACTOR: Instead of global listener, let's use a query that pulls messages for the *loaded* groups.
     const groupIds = groups.map(g => g.id);
     if (groupIds.length === 0) return;
 
-    // Firestore 'in' allows up to 10 IDs. If user has > 10 groups, this breaks.
-    // Fallback: Listen to all messages (dev) or restructure.
-    // SAFE PRODUCTION APP: Messages should be a subcollection of Group.
-    
-    // TEMPORARY SOLUTION: We will fetch messages inside the GroupView component in a real app.
-    // But to keep the current architecture:
-    
+    // MVP: Carrega mensagens e filtra localmente
     const qMsg = query(collection(db, "messages"), orderBy("timestamp", "asc"));
     const unsubMsg = onSnapshot(qMsg, (snapshot) => {
         const msgs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Message));
-        // Filter client side to only show messages for my groups
         const myMsgs = msgs.filter(m => groupIds.includes(m.groupId));
         setMessages(myMsgs);
     });
 
     return () => unsubMsg();
   }, [groups, user]);
-
 
   // --- ACTIONS ---
 
@@ -216,7 +178,6 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
     if (user) {
       const userRef = doc(db, "users", user.id);
       await updateDoc(userRef, updates);
-      // Local state updates automatically via onSnapshot/onAuthStateChanged logic effectively
       setUser({ ...user, ...updates });
     }
   };
@@ -246,7 +207,6 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
   const joinGroup = async (code: string) => {
     if (!user) return false;
     
-    // Find group by code
     const q = query(collection(db, "groups"), where("code", "==", code));
     const querySnapshot = await getDocs(q);
     
@@ -304,8 +264,6 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
     if (!user) return;
     setQueueCount(prev => prev + 1);
     
-    // Simulating public match (In real app, backend cloud function handles this)
-    // Here we will just auto-create a group for them after delay
     setTimeout(async () => {
         const name = generateAngolanGroupName();
         await createGroup(name, "Grupo Público Automático", true, 5000);
@@ -318,7 +276,6 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
     if (!group) return;
     
     let participants = [...group.participants];
-    // Shuffle
     for (let i = participants.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [participants[i], participants[j]] = [participants[j], participants[i]];

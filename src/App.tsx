@@ -37,7 +37,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
           <div className="bg-white p-4 rounded shadow text-left text-xs font-mono overflow-auto max-w-lg w-full border border-red-200">
              {this.state.error?.message || "Erro desconhecido"}
              <br/>
-             Verifique as configurações de API Key no Vercel.
+             Tente recarregar a página.
           </div>
           <button onClick={() => window.location.reload()} className="mt-6 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
             Tentar Novamente

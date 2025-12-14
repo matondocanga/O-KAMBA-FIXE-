@@ -1,10 +1,9 @@
-import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { getAnalytics, isSupported } from "firebase/analytics";
+import firebase from "firebase/app";
+import "firebase/auth";
+import "firebase/firestore";
+import "firebase/analytics";
 
-// --- IMPORTANTE: SUBSTITUA COM OS DADOS DO SEU CONSOLE FIREBASE ---
-// As chaves devem estar no arquivo .env na raiz do projeto ou configuradas no Vercel
+// --- CONFIGURAÇÃO DO FIREBASE ---
 
 // Cast import.meta to any to resolve TS error
 const env = (import.meta as any).env;
@@ -22,17 +21,19 @@ const firebaseConfig = {
 // Debug: Verificar se as chaves foram carregadas
 if (!firebaseConfig.apiKey) {
   console.error("ERRO CRÍTICO FIREBASE: A 'apiKey' não foi encontrada.");
-  console.error("Certifique-se de que configurou as Variáveis de Ambiente no Vercel (Settings > Environment Variables).");
-  console.log("Valores atuais:", firebaseConfig);
 } else {
   console.log("Firebase conectado com o projeto:", firebaseConfig.projectId);
 }
 
-// Inicializar Firebase
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
-export const db = getFirestore(app);
+// Inicializar Firebase (V8 Style)
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 
-// Inicializar Analytics apenas se suportado (evita erros em ambientes de teste/SSR)
-export const analytics = isSupported().then(yes => yes ? getAnalytics(app) : null);
+export const auth = firebase.auth();
+export const googleProvider = new firebase.auth.GoogleAuthProvider();
+export const db = firebase.firestore();
+
+export const analytics = firebase.analytics && typeof firebase.analytics === 'function' ? firebase.analytics() : null;
+
+export default firebase;
