@@ -1,12 +1,13 @@
-// Gerenciamento de Estado Centralizado (Mock Database)
+console.log("🔄 Carregando Kamba Fixe State System...");
 
-const DB_KEYS = {
+// Definição das Chaves do LocalStorage
+var DB_KEYS = {
     USER: 'kamba_user',
     GROUPS: 'kamba_groups',
-    MESSAGES: 'kamba_messages',
-    QUEUE: 'kamba_queue_count'
+    MESSAGES: 'kamba_messages'
 };
 
+// Produtos Mockados Globais
 window.MOCK_PRODUCTS = [
     { id: 'p1', name: 'Grãos de Café de Angola', price: 5000, currency: 'Kz', image: 'https://picsum.photos/300/300?random=1' },
     { id: 'p2', name: 'Caneca Personalizada "Kamba"', price: 2500, currency: 'Kz', image: 'https://picsum.photos/300/300?random=2' },
@@ -16,31 +17,39 @@ window.MOCK_PRODUCTS = [
     { id: 'p6', name: 'Caixa de Chocolates', price: 4000, currency: 'Kz', image: 'https://picsum.photos/300/300?random=6' },
 ];
 
+// Objeto State Principal - Atribuição Direta
 window.State = {
-    getUser: () => {
+    getUser: function() {
         try {
-            return JSON.parse(localStorage.getItem(DB_KEYS.USER));
-        } catch (e) { return null; }
+            var data = localStorage.getItem(DB_KEYS.USER);
+            return data ? JSON.parse(data) : null;
+        } catch (e) { 
+            console.error("Erro ao ler usuário:", e);
+            return null; 
+        }
     },
     
-    setUser: (user) => {
-        localStorage.setItem(DB_KEYS.USER, JSON.stringify(user));
+    setUser: function(user) {
+        try {
+            localStorage.setItem(DB_KEYS.USER, JSON.stringify(user));
+        } catch (e) { console.error("Erro ao salvar usuário:", e); }
     },
     
-    logout: () => {
+    logout: function() {
         localStorage.removeItem(DB_KEYS.USER);
-        window.location.href = './index.html';
+        window.location.href = 'index.html';
     },
 
-    getGroups: () => {
+    getGroups: function() {
         try {
-            return JSON.parse(localStorage.getItem(DB_KEYS.GROUPS)) || [];
+            var data = localStorage.getItem(DB_KEYS.GROUPS);
+            return data ? JSON.parse(data) : [];
         } catch (e) { return []; }
     },
 
-    saveGroup: (group) => {
-        const groups = window.State.getGroups();
-        const index = groups.findIndex(g => g.id === group.id);
+    saveGroup: function(group) {
+        var groups = this.getGroups();
+        var index = groups.findIndex(function(g) { return g.id === group.id; });
         if (index >= 0) {
             groups[index] = group;
         } else {
@@ -49,39 +58,30 @@ window.State = {
         localStorage.setItem(DB_KEYS.GROUPS, JSON.stringify(groups));
     },
 
-    getMessages: (groupId) => {
+    getMessages: function(groupId) {
         try {
-            const all = JSON.parse(localStorage.getItem(DB_KEYS.MESSAGES)) || [];
-            return all.filter(m => m.groupId === groupId).sort((a,b) => a.timestamp - b.timestamp);
+            var all = JSON.parse(localStorage.getItem(DB_KEYS.MESSAGES)) || [];
+            return all.filter(function(m) { return m.groupId === groupId; }).sort(function(a,b) { return a.timestamp - b.timestamp; });
         } catch (e) { return []; }
     },
 
-    addMessage: (msg) => {
-        const all = JSON.parse(localStorage.getItem(DB_KEYS.MESSAGES)) || [];
+    addMessage: function(msg) {
+        var all = JSON.parse(localStorage.getItem(DB_KEYS.MESSAGES)) || [];
         all.push(msg);
         localStorage.setItem(DB_KEYS.MESSAGES, JSON.stringify(all));
     },
 
-    // --- UTILS ---
-    
-    generateAngolanName: () => {
-        const PREFIXES = ["Os Kambas", "União", "Estrelas", "Guerreiros", "Filhos", "Banda", "Grupo", "Amigos"];
-        const ICONS = ["da Palanca Negra", "do Imbondeiro", "da Rainha Ginga", "do Pensador", "de Kalandula", "da Muxima", "do Semba", "da Kizomba", "do Kuduro", "da Welwitschia", "do Kilamba", "da Serra da Leba", "do Mussulo", "do Maiombe", "do Mufete"];
-        const SUFFIXES = ["Fixe", "Solidário", "do Natal", "da Paz", "Brilhante", "Vitorioso", "da Banda", "Angolano"];
+    generateAngolanName: function() {
+        var PREFIXES = ["Os Kambas", "União", "Estrelas", "Guerreiros", "Filhos", "Banda", "Grupo", "Amigos"];
+        var ICONS = ["da Palanca Negra", "do Imbondeiro", "da Rainha Ginga", "do Pensador", "de Kalandula", "da Muxima", "do Semba", "da Kizomba", "do Kuduro", "da Welwitschia", "do Kilamba", "da Serra da Leba", "do Mussulo", "do Maiombe", "do Mufete"];
+        var SUFFIXES = ["Fixe", "Solidário", "do Natal", "da Paz", "Brilhante", "Vitorioso", "da Banda", "Angolano"];
         
-        const prefix = PREFIXES[Math.floor(Math.random() * PREFIXES.length)];
-        const icon = ICONS[Math.floor(Math.random() * ICONS.length)];
-        const useSuffix = Math.random() > 0.5;
-        const suffix = useSuffix ? ` ${SUFFIXES[Math.floor(Math.random() * SUFFIXES.length)]}` : "";
-
-        return `${prefix} ${icon}${suffix}`;
+        var p = PREFIXES[Math.floor(Math.random() * PREFIXES.length)];
+        var i = ICONS[Math.floor(Math.random() * ICONS.length)];
+        var s = SUFFIXES[Math.floor(Math.random() * SUFFIXES.length)];
+        return p + " " + i + " " + s;
     },
 
-    formatCurrency: (amount) => {
-        return `${amount.toLocaleString()} Kz`;
-    },
-
-    // WhatsApp Vendor Data
     VENDOR: {
         name: "Macro Yetu",
         phone: "244943831033",
@@ -90,13 +90,20 @@ window.State = {
     }
 };
 
-// Check Auth on restricted pages
+// Função global de verificação de autenticação
 window.checkAuth = function() {
-    const path = window.location.pathname;
-    // Allow index.html and root path
-    const isPublic = path.endsWith('index.html') || path === '/' || path.endsWith('/');
+    var user = window.State.getUser();
+    var path = window.location.pathname;
     
-    if (!window.State.getUser() && !isPublic) {
-        window.location.href = './index.html';
+    // Se estiver na página de login, não faz nada (o script da página redireciona se já logado)
+    if (path.indexOf('index.html') !== -1 || path === '/' || path.endsWith('/')) {
+        return;
     }
-}
+
+    if (!user) {
+        console.warn("Usuário não autenticado. Redirecionando...");
+        window.location.href = 'index.html';
+    }
+};
+
+console.log("✅ State carregado e definido globalmente.");

@@ -1,3 +1,11 @@
-// This application has been converted to a Multi-Page Application (MPA).
-// This file is kept to satisfy build tool requirements but performs no actions.
-console.log("O KAMBA FIXE! running in MPA mode.");
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App';
+
+const container = document.getElementById('root');
+const root = createRoot(container!);
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);

@@ -14,7 +14,7 @@ const VENDOR = {
     phone: "244943831033", // Formato internacional para API WhatsApp
     displayPhone: "943 831 033",
     address: "Kifica, rua 22, rua directa do BFA; Benfica",
-    logo: "https://ui-avatars.com/api/?name=Macro+Yetu&background=D4AF37&color=fff&size=128" // Placeholder logo
+    logo: "https://ui-avatars.com/api/?name=Macro+Yetu&background=D4AF37&color=fff&size=128" 
 };
 
 // --- SUB-COMPONENTS FOR GAMES ---
@@ -40,18 +40,17 @@ const QuizGame = () => {
     ];
 
     const handleAnswer = (idx: number) => {
-        if (isProcessing) return; // Prevent double clicks
+        if (isProcessing) return;
         
         setIsProcessing(true);
         setSelectedOpt(idx);
 
-        // Visual delay to show selection before moving on
         setTimeout(() => {
             if (idx === questions[currentQ].ans) setScore(prev => prev + 1);
             
             if (currentQ < questions.length - 1) {
                 setCurrentQ(prev => prev + 1);
-                setSelectedOpt(null); // Reset selection for next question
+                setSelectedOpt(null);
             } else {
                 setFinished(true);
             }
@@ -76,7 +75,6 @@ const QuizGame = () => {
             <h3 className="text-lg font-bold text-gray-900 mb-6">{questions[currentQ].q}</h3>
             <div className="grid gap-2">
                 {questions[currentQ].options.map((opt, idx) => {
-                    // Logic to style buttons based on state
                     let btnClass = "p-3 rounded-lg text-left font-medium border transition-colors ";
                     if (selectedOpt === idx) {
                         btnClass += "bg-christmasGold text-white border-christmasGold";
@@ -149,25 +147,6 @@ const AnagramGame = () => {
     );
 };
 
-const RandomGenerator = ({ options, title }: { options: string[], title: string }) => {
-    const [result, setResult] = useState("");
-    const spin = () => {
-        setResult("...");
-        setTimeout(() => {
-            setResult(options[Math.floor(Math.random() * options.length)]);
-        }, 500);
-    };
-    return (
-        <div className="bg-white p-4 rounded-xl border border-gray-200 text-center">
-            <h3 className="font-bold text-gray-800 mb-4">{title}</h3>
-            <div className="min-h-[100px] flex items-center justify-center p-4 bg-gray-50 rounded-lg mb-4 border border-gray-100">
-                <p className="text-xl font-bold text-christmasRed leading-relaxed">{result || "Toque para sortear"}</p>
-            </div>
-            <button onClick={spin} className="w-full bg-gray-900 text-white py-3 rounded-lg font-bold hover:bg-black transition-colors">Sortear</button>
-        </div>
-    );
-};
-
 // --- MAIN COMPONENT ---
 
 export default function GroupView() {
@@ -176,7 +155,6 @@ export default function GroupView() {
   const [activeTab, setActiveTab] = useState<'chat' | 'info' | 'activities' | 'settings' | 'shop'>('info');
   const [msgText, setMsgText] = useState('');
   const [showInvite, setShowInvite] = useState(false);
-  const [activeGame, setActiveGame] = useState<string | null>(null);
   
   // Shop State
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -252,35 +230,45 @@ export default function GroupView() {
         `📝 *Minhas Observações:* ${orderNotes ? orderNotes : 'Sem observações'}\n\n` +
         `Aguardo confirmação do pagamento!`;
 
-      // Use encodeURIComponent to correctly handle spaces, newlines, and special characters from user input
       const whatsappUrl = `https://wa.me/${VENDOR.phone}?text=${encodeURIComponent(rawMessage)}`;
 
       window.open(whatsappUrl, '_blank');
       
-      // Close modal after sending
       setSelectedProduct(null);
       setOrderNotes('');
   };
 
+  // Helper styles for tabs - UPDATED TO FIXED FLEX LAYOUT (GRID-LIKE)
+  const getTabClass = (tabName: string) => {
+      const isActive = activeTab === tabName;
+      return `
+        flex-1 min-w-0
+        py-2 md:px-4 md:py-3 
+        rounded-xl transition-all cursor-pointer select-none
+        flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2
+        ${isActive ? 'bg-christmasRed text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}
+      `;
+  };
+
   return (
-    <div className="h-full flex flex-col md:block space-y-4">
+    <div className="h-full flex flex-col md:block space-y-4 pb-20 md:pb-0">
       {/* Header */}
       <div className="bg-white rounded-3xl p-6 shadow-sm border-t-4 border-christmasRed relative">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-                <h1 className="text-2xl font-bold font-header text-gray-800">{group.name}</h1>
-                <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm text-gray-500">Código:</span>
-                    <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-800 font-bold select-all text-sm">{group.code}</span>
+                <h1 className="text-2xl font-bold font-header text-gray-800 leading-tight">{group.name}</h1>
+                <div className="flex items-center gap-2 mt-2">
+                    <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Código:</span>
+                    <span className="font-mono bg-gray-100 px-3 py-1 rounded-lg text-gray-800 font-bold select-all text-sm border border-gray-200">{group.code}</span>
                 </div>
             </div>
             
             <div className="flex gap-2 w-full md:w-auto">
                  <button 
                     onClick={() => setShowInvite(!showInvite)}
-                    className="flex-1 md:flex-none bg-christmasGold text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:bg-yellow-600 transition-colors flex items-center justify-center gap-2"
+                    className="flex-1 md:flex-none bg-christmasGold text-white px-4 py-3 rounded-xl text-sm font-bold shadow-md hover:bg-yellow-600 transition-colors flex items-center justify-center gap-2"
                 >
-                    <Share2 size={16} /> Convidar Kambas
+                    <Share2 size={18} /> Convidar
                 </button>
             </div>
         </div>
@@ -316,89 +304,176 @@ export default function GroupView() {
             <div className="mt-4 p-4 bg-red-50 rounded-2xl border border-red-100">
                 <div className="flex justify-between items-center">
                     <div>
-                        <h3 className="font-bold text-christmasRed">Zona do Admin</h3>
-                        <p className="text-xs text-gray-600">{group.participants.length} participantes entraram.</p>
+                        <h3 className="font-bold text-christmasRed text-sm">Zona do Admin</h3>
+                        <p className="text-xs text-gray-600">{group.participants.length} entraram.</p>
                     </div>
                     <button 
                         onClick={handleDraw}
-                        className="bg-christmasRed text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:bg-red-800 transition-colors flex items-center gap-2"
+                        className="bg-christmasRed text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md hover:bg-red-800 transition-colors flex items-center gap-2"
                     >
-                        <Shuffle size={16} /> Realizar Sorteio
+                        <Shuffle size={14} /> Sorteio
                     </button>
                 </div>
             </div>
         )}
       </div>
 
-      {/* Navigation Tabs - Fixed for Mobile Overlap */}
-      <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100 overflow-x-auto gap-2 no-scrollbar">
-        <button onClick={() => setActiveTab('info')} className={`shrink-0 w-auto px-4 py-3 text-sm font-bold rounded-xl transition-all whitespace-nowrap flex justify-center gap-2 ${activeTab === 'info' ? 'bg-christmasRed text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
-            <UserIcon size={18} /> <span>Participantes</span>
+      {/* Navigation Tabs - OPTIMIZED GRID LAYOUT */}
+      <div className="w-full bg-white p-1 rounded-2xl shadow-sm border border-gray-100 flex items-stretch gap-1 sticky top-0 z-30">
+        <button onClick={() => setActiveTab('info')} className={getTabClass('info')}>
+            <UserIcon size={20} className="md:w-5 md:h-5 w-4 h-4" /> 
+            <span className="text-[10px] md:text-sm font-bold leading-none truncate w-full text-center">Membros</span>
         </button>
-        <button onClick={() => setActiveTab('chat')} className={`shrink-0 w-auto px-4 py-3 text-sm font-bold rounded-xl transition-all whitespace-nowrap flex justify-center gap-2 ${activeTab === 'chat' ? 'bg-christmasRed text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
-            <MessageCircle size={18} /> <span>Chat</span>
+        <button onClick={() => setActiveTab('chat')} className={getTabClass('chat')}>
+            <MessageCircle size={20} className="md:w-5 md:h-5 w-4 h-4" /> 
+            <span className="text-[10px] md:text-sm font-bold leading-none truncate w-full text-center">Chat</span>
         </button>
-        <button onClick={() => setActiveTab('activities')} className={`shrink-0 w-auto px-4 py-3 text-sm font-bold rounded-xl transition-all whitespace-nowrap flex justify-center gap-2 ${activeTab === 'activities' ? 'bg-christmasRed text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
-            <Gamepad2 size={18} /> <span>Atividades</span>
+        <button onClick={() => setActiveTab('activities')} className={getTabClass('activities')}>
+            <Gamepad2 size={20} className="md:w-5 md:h-5 w-4 h-4" /> 
+            <span className="text-[10px] md:text-sm font-bold leading-none truncate w-full text-center">Jogos</span>
         </button>
-        <button onClick={() => setActiveTab('shop')} className={`shrink-0 w-auto px-4 py-3 text-sm font-bold rounded-xl transition-all whitespace-nowrap flex justify-center gap-2 ${activeTab === 'shop' ? 'bg-christmasRed text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
-            <ShoppingBag size={18} /> <span>Loja</span>
+        <button onClick={() => setActiveTab('shop')} className={getTabClass('shop')}>
+            <ShoppingBag size={20} className="md:w-5 md:h-5 w-4 h-4" /> 
+            <span className="text-[10px] md:text-sm font-bold leading-none truncate w-full text-center">Loja</span>
         </button>
-        <button onClick={() => setActiveTab('settings')} className={`shrink-0 w-auto px-4 py-3 text-sm font-bold rounded-xl transition-all whitespace-nowrap flex justify-center gap-2 ${activeTab === 'settings' ? 'bg-christmasRed text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
-            <Settings size={18} /> <span>Config</span>
+        <button onClick={() => setActiveTab('settings')} className={getTabClass('settings')}>
+            <Settings size={20} className="md:w-5 md:h-5 w-4 h-4" /> 
+            <span className="text-[10px] md:text-sm font-bold leading-none truncate w-full text-center">Config</span>
         </button>
       </div>
 
       {/* Tab Content */}
-      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 flex-1 overflow-hidden min-h-[400px] flex flex-col">
+      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 min-h-[400px]">
         
+        {/* MEMBERS TAB */}
+        {activeTab === 'info' && (
+            <div className="p-6">
+                <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <Users size={20} className="text-christmasRed" /> Participantes
+                </h3>
+                <div className="space-y-3">
+                    {group.participants.map(pid => {
+                        const p = getParticipant(pid);
+                        return (
+                            <div key={pid} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                <div className="flex items-center gap-3">
+                                    <img src={p.avatarUrl} alt={p.name} className="w-10 h-10 rounded-full bg-white border border-gray-200" />
+                                    <div>
+                                        <p className="font-bold text-gray-800 text-sm">
+                                            {p.name} {pid === user.id && '(Você)'}
+                                        </p>
+                                        <p className="text-xs text-gray-500">{pid === group.adminId ? 'Administrador' : 'Membro'}</p>
+                                    </div>
+                                </div>
+                                {group.status === 'drawn' && pid === user.id && (
+                                    <div className="bg-green-100 text-green-700 p-1.5 rounded-full" title="Você tem um par!">
+                                        <Gift size={16} />
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        )}
+
         {/* CHAT TAB */}
         {activeTab === 'chat' && (
-            <>
-                <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-50/50">
-                    {groupMessages.length === 0 && (
-                        <div className="text-center text-gray-400 py-10">Sem mensagens. Diga Olá! 👋</div>
-                    )}
-                    {groupMessages.map(msg => (
-                        <div key={msg.id} className={`flex ${msg.senderId === user.id ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[70%] rounded-2xl p-3 shadow-sm ${msg.senderId === user.id ? 'bg-christmasRed text-white rounded-tr-none' : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none'}`}>
-                                <p className="text-xs opacity-70 mb-1">{msg.senderName}</p>
-                                <p className="text-sm">{msg.text}</p>
-                            </div>
+            <div className="flex flex-col h-[60vh] md:h-[500px]">
+                <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-50/50" ref={chatEndRef}>
+                    {groupMessages.length === 0 ? (
+                        <div className="text-center py-10 opacity-50">
+                            <MessageCircle size={48} className="mx-auto mb-2 text-gray-300" />
+                            <p className="text-gray-400 font-medium">O chat está silencioso como a neve...</p>
                         </div>
-                    ))}
+                    ) : (
+                        groupMessages.map(msg => (
+                            <div key={msg.id} className={`flex ${msg.senderId === user.id ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`max-w-[75%] rounded-2xl p-3 shadow-sm ${msg.senderId === user.id ? 'bg-christmasRed text-white rounded-tr-none' : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none'}`}>
+                                    <p className={`text-[10px] mb-1 font-bold ${msg.senderId === user.id ? 'text-white/70' : 'text-christmasRed'}`}>
+                                        {msg.senderName}
+                                    </p>
+                                    <p className="text-sm leading-snug break-words">{msg.text}</p>
+                                </div>
+                            </div>
+                        ))
+                    )}
                     <div ref={chatEndRef} />
                 </div>
-                <form onSubmit={handleSendMsg} className="p-3 border-t bg-white flex gap-2">
+                <form onSubmit={handleSendMsg} className="p-3 border-t bg-white flex gap-2 rounded-b-3xl">
                     <input 
                         type="text" 
                         value={msgText}
                         onChange={e => setMsgText(e.target.value)}
+                        className="flex-1 bg-gray-100 rounded-xl px-4 py-3 border-0 focus:ring-2 focus:ring-christmasRed outline-none transition-all" 
                         placeholder="Digite uma mensagem..."
-                        className="flex-1 bg-gray-100 rounded-xl px-4 py-3 border-0 focus:ring-2 focus:ring-christmasRed outline-none text-gray-900 placeholder-gray-500"
                     />
-                    <button type="submit" className="bg-christmasRed text-white p-3 rounded-xl hover:bg-red-800 transition-colors">
+                    <button type="submit" disabled={!msgText.trim()} className="bg-christmasRed text-white p-3 rounded-xl hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm">
                         <Send size={20} />
                     </button>
                 </form>
-            </>
+            </div>
         )}
 
-        {/* PARTICIPANTS TAB */}
-        {activeTab === 'info' && (
+        {/* GAMES TAB */}
+        {activeTab === 'activities' && (
             <div className="p-6">
-                <h3 className="font-bold text-gray-800 mb-4">Participantes ({group.participants.length})</h3>
-                <div className="space-y-3">
-                    {group.participants.map(pid => (
-                        <div key={pid} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-christmasGold/20 flex items-center justify-center text-christmasGold font-bold">
-                                    {getParticipantName(pid).charAt(0)}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <button className="bg-blue-50 p-5 rounded-2xl border border-blue-100 text-left hover:bg-blue-100 transition-colors group" onClick={() => window.scrollTo({top: 500, behavior: 'smooth'})}>
+                         <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-blue-100 rounded-lg text-blue-600 group-hover:bg-blue-200 transition-colors">
+                                <HelpCircle size={24} />
+                            </div>
+                            <h3 className="font-bold text-blue-900 text-lg">Quiz de Natal</h3>
+                         </div>
+                         <p className="text-sm text-blue-700/80">Teste seus conhecimentos festivos!</p>
+                         <div className="mt-4"><QuizGame /></div>
+                    </button>
+
+                    <button className="bg-orange-50 p-5 rounded-2xl border border-orange-100 text-left hover:bg-orange-100 transition-colors group">
+                         <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-orange-100 rounded-lg text-orange-600 group-hover:bg-orange-200 transition-colors">
+                                <Puzzle size={24} />
+                            </div>
+                            <h3 className="font-bold text-orange-900 text-lg">Anagrama</h3>
+                         </div>
+                         <p className="text-sm text-orange-700/80">Desembaralhe as palavras.</p>
+                         <div className="mt-4"><AnagramGame /></div>
+                    </button>
+                </div>
+            </div>
+        )}
+
+        {/* SHOP TAB */}
+        {activeTab === 'shop' && (
+            <div className="p-4">
+                <div className="bg-white p-4 rounded-2xl border border-christmasGold shadow-sm mb-6 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-christmasGold flex items-center justify-center text-white font-bold text-lg shadow-inner">MY</div>
+                    <div>
+                        <h3 className="font-bold text-gray-900 text-lg">{VENDOR.name}</h3>
+                        <p className="text-xs text-green-600 font-bold flex items-center gap-1">
+                            <Check size={12} /> Parceiro Oficial Kamba Fixe
+                        </p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {products.map(product => (
+                        <div key={product.id} className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm flex flex-col hover:border-christmasRed transition-colors">
+                            <div className="aspect-square relative bg-gray-100">
+                                <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                                <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-md text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                                    {product.currency} {product.price.toLocaleString()}
                                 </div>
-                                <div>
-                                    <p className="font-bold text-gray-800 text-sm">{getParticipantName(pid)}</p>
-                                    <p className="text-xs text-gray-500">{pid === group.adminId ? 'Admin do Grupo' : 'Membro'}</p>
-                                </div>
+                            </div>
+                            <div className="p-3 flex flex-col flex-1">
+                                <h4 className="font-bold text-xs md:text-sm text-gray-800 line-clamp-2 mb-1 flex-1">{product.name}</h4>
+                                <button 
+                                    onClick={() => handleBuyClick(product)}
+                                    className="w-full mt-2 bg-christmasGreen text-white py-2 rounded-lg text-xs font-bold hover:bg-green-700 active:scale-95 transition-all flex items-center justify-center gap-1"
+                                >
+                                    <ShoppingBag size={14} /> Encomendar
+                                </button>
                             </div>
                         </div>
                     ))}
@@ -406,287 +481,138 @@ export default function GroupView() {
             </div>
         )}
 
-        {/* SHOP TAB (NEW) */}
-        {activeTab === 'shop' && (
-            <div className="p-4 bg-gray-50 min-h-full">
-                {/* Vendor Profile Card */}
-                <div className="bg-white p-4 rounded-2xl border border-christmasGold shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center md:items-start relative overflow-hidden">
-                    <div className="w-16 h-16 rounded-full bg-christmasGold flex items-center justify-center text-white text-2xl font-bold font-header shrink-0">
-                        MY
-                    </div>
-                    <div className="text-center md:text-left flex-1 relative z-10">
-                        <h3 className="text-xl font-bold font-header text-gray-800">{VENDOR.name}</h3>
-                        <p className="text-sm text-gray-500 mb-2 flex items-center justify-center md:justify-start gap-1">
-                            <MapPin size={14} /> {VENDOR.address}
-                        </p>
-                        <p className="text-sm text-christmasGreen font-bold flex items-center justify-center md:justify-start gap-1">
-                             <Phone size={14} /> {VENDOR.displayPhone}
-                        </p>
-                        <div className="mt-2 text-xs bg-green-50 text-green-700 px-2 py-1 rounded-lg inline-block border border-green-200">
-                            Parceiro Oficial O Kamba Fixe!
-                        </div>
-                    </div>
-                    <div className="absolute right-0 top-0 opacity-10 transform translate-x-1/4 -translate-y-1/4">
-                         <ShoppingBag size={150} />
-                    </div>
-                </div>
-
-                <h3 className="font-bold text-gray-800 mb-4 ml-1">Presentes Disponíveis</h3>
-                <div className="grid grid-cols-2 gap-3">
-                     {products.map(product => (
-                        <div key={product.id} className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col">
-                            <div className="aspect-square relative">
-                                <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-                                <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-lg font-bold">
-                                    {product.price.toLocaleString()} {product.currency}
-                                </div>
-                            </div>
-                            <div className="p-3 flex flex-col flex-1">
-                                <h4 className="font-bold text-gray-800 text-sm leading-tight mb-1">{product.name}</h4>
-                                <div className="mt-auto pt-2">
+        {/* SETTINGS TAB */}
+        {activeTab === 'settings' && (
+            <div className="p-6">
+                {isAdmin ? (
+                    <div className="space-y-6">
+                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                            <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                <Settings size={20} /> Privacidade do Grupo
+                            </h3>
+                            
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-bold text-gray-800">Aprovação Necessária</p>
+                                        <p className="text-xs text-gray-500">Admin deve aprovar novos membros</p>
+                                    </div>
                                     <button 
-                                        onClick={() => handleBuyClick(product)}
-                                        className="w-full bg-christmasGreen text-white py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 hover:bg-green-700"
+                                        onClick={() => toggleGroupApproval(group.id, !group.approvalRequired)}
+                                        className={`w-12 h-7 rounded-full transition-colors relative ${group.approvalRequired ? 'bg-christmasGreen' : 'bg-gray-300'}`}
                                     >
-                                        <MessageCircle size={14} /> Encomendar
+                                        <div className={`w-5 h-5 bg-white rounded-full absolute top-1 transition-transform shadow-sm ${group.approvalRequired ? 'left-[26px]' : 'left-1'}`} />
+                                    </button>
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-bold text-gray-800">Grupo Público</p>
+                                        <p className="text-xs text-gray-500">Aparece na busca e fila pública</p>
+                                    </div>
+                                    <button 
+                                        onClick={() => toggleGroupVisibility(group.id, !group.isPublic)}
+                                        className={`w-12 h-7 rounded-full transition-colors relative ${group.isPublic ? 'bg-christmasGreen' : 'bg-gray-300'}`}
+                                    >
+                                        <div className={`w-5 h-5 bg-white rounded-full absolute top-1 transition-transform shadow-sm ${group.isPublic ? 'left-[26px]' : 'left-1'}`} />
                                     </button>
                                 </div>
                             </div>
                         </div>
-                     ))}
-                </div>
 
-                {/* ORDER MODAL */}
-                {selectedProduct && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-                        <div className="bg-white rounded-3xl p-6 w-full max-w-md animate-in fade-in zoom-in duration-200 relative">
-                            <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                                <X size={24} />
-                            </button>
-                            
-                            <h3 className="text-xl font-bold font-header text-gray-800 mb-1">Confirmar Pedido</h3>
-                            <p className="text-sm text-gray-500 mb-4">Enviar pedido para {VENDOR.name} via WhatsApp</p>
-
-                            <div className="bg-gray-50 p-3 rounded-xl flex gap-3 items-center mb-4 border border-gray-200">
-                                <img src={selectedProduct.image} className="w-12 h-12 rounded-lg object-cover" alt="" />
-                                <div>
-                                    <p className="font-bold text-gray-800 text-sm">{selectedProduct.name}</p>
-                                    <p className="text-christmasRed font-bold text-sm">{selectedProduct.price} {selectedProduct.currency}</p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-1">Para quem é o presente?</label>
-                                    <select 
-                                        value={orderRecipient}
-                                        onChange={e => setOrderRecipient(e.target.value)}
-                                        className="w-full p-3 bg-white border-2 border-gray-200 rounded-xl font-bold text-gray-800 focus:border-christmasGreen outline-none"
-                                    >
-                                        <option value="">Selecione um Kamba...</option>
-                                        {group.participants.map(pid => (
-                                            <option key={pid} value={pid}>
-                                                {getParticipantName(pid)} {pid === user.id ? '(Eu mesmo)' : ''}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                                        <Check size={12} /> A foto do perfil será enviada para personalização.
-                                    </p>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-1">Observações (Tamanho, Cor, etc)</label>
-                                    <textarea 
-                                        rows={3}
-                                        value={orderNotes}
-                                        onChange={e => setOrderNotes(e.target.value)}
-                                        className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-gray-200 text-gray-800 text-sm"
-                                        placeholder="Ex: Quero embrulho vermelho, tamanho M..."
-                                    />
-                                </div>
-
-                                <button 
-                                    onClick={sendOrderToWhatsApp}
-                                    disabled={!orderRecipient}
-                                    className="w-full bg-[#25D366] text-white py-3 rounded-xl font-bold shadow-md hover:bg-[#20bd5a] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <MessageCircle size={20} /> Enviar no WhatsApp
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
-        )}
-
-        {/* ACTIVITIES TAB - NEW 5 GAMES */}
-        {activeTab === 'activities' && (
-            <div className="p-6">
-                {!activeGame ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <button onClick={() => setActiveGame('quiz')} className="bg-blue-50 p-5 rounded-2xl border border-blue-100 text-left hover:bg-blue-100 transition-colors">
-                            <div className="bg-white w-10 h-10 rounded-full flex items-center justify-center text-blue-600 mb-3 shadow-sm"><HelpCircle size={20} /></div>
-                            <h3 className="font-bold text-blue-900">Quiz de Natal</h3>
-                            <p className="text-xs text-blue-700">Teste seus conhecimentos festivos.</p>
-                        </button>
-                        <button onClick={() => setActiveGame('anagram')} className="bg-orange-50 p-5 rounded-2xl border border-orange-100 text-left hover:bg-orange-100 transition-colors">
-                            <div className="bg-white w-10 h-10 rounded-full flex items-center justify-center text-orange-600 mb-3 shadow-sm"><Puzzle size={20} /></div>
-                            <h3 className="font-bold text-orange-900">Anagrama Festivo</h3>
-                            <p className="text-xs text-orange-700">Desembaralhe as palavras.</p>
-                        </button>
-                        <button onClick={() => setActiveGame('likely')} className="bg-purple-50 p-5 rounded-2xl border border-purple-100 text-left hover:bg-purple-100 transition-colors">
-                            <div className="bg-white w-10 h-10 rounded-full flex items-center justify-center text-purple-600 mb-3 shadow-sm"><Users size={20} /></div>
-                            <h3 className="font-bold text-purple-900">Quem é mais provável?</h3>
-                            <p className="text-xs text-purple-700">Votação em grupo divertida.</p>
-                        </button>
-                        <button onClick={() => setActiveGame('truth')} className="bg-pink-50 p-5 rounded-2xl border border-pink-100 text-left hover:bg-pink-100 transition-colors">
-                            <div className="bg-white w-10 h-10 rounded-full flex items-center justify-center text-pink-600 mb-3 shadow-sm"><PartyPopper size={20} /></div>
-                            <h3 className="font-bold text-pink-900">Verdade ou Desafio</h3>
-                            <p className="text-xs text-pink-700">Ousadia natalina.</p>
-                        </button>
-                        <button onClick={() => setActiveGame('fortune')} className="sm:col-span-2 bg-yellow-50 p-5 rounded-2xl border border-yellow-100 text-left hover:bg-yellow-100 transition-colors">
-                            <div className="bg-white w-10 h-10 rounded-full flex items-center justify-center text-yellow-600 mb-3 shadow-sm"><Gift size={20} /></div>
-                            <h3 className="font-bold text-yellow-900">Biscoito da Sorte</h3>
-                            <p className="text-xs text-yellow-700">Tire uma mensagem para 2024.</p>
-                        </button>
-                    </div>
-                ) : (
-                    <div>
-                        <button onClick={() => setActiveGame(null)} className="mb-4 text-sm font-bold text-gray-500 hover:text-gray-800">← Voltar para Jogos</button>
-                        {activeGame === 'quiz' && <QuizGame />}
-                        {activeGame === 'anagram' && <AnagramGame />}
-                        {activeGame === 'likely' && <RandomGenerator title="Quem é mais provável de..." options={[
-                            "Comer todo o bolo", 
-                            "Esquecer o presente", 
-                            "Dormir antes da meia-noite", 
-                            "Chorar ao receber o presente", 
-                            "Usar a roupa mais feia",
-                            "Beber demais o vinho",
-                            "Ser o primeiro a chegar",
-                            "Quebrar um enfeite da árvore",
-                            "Cantar mais alto nas músicas",
-                            "Vestir-se de Papai Noel"
-                        ]} />}
-                        {activeGame === 'truth' && <RandomGenerator title="Verdade ou Desafio" options={[
-                            "Verdade: Pior presente que já recebeu?", 
-                            "Desafio: Imite o Papai Noel por 1 min", 
-                            "Verdade: Você acredita em renas voadoras?", 
-                            "Desafio: Cante Jingle Bells operático",
-                            "Verdade: Já reciclou um presente?",
-                            "Desafio: Dê um abraço na pessoa à sua direita",
-                            "Verdade: Qual sua comida de natal favorita?",
-                            "Desafio: Dance a Macarena natalina",
-                            "Verdade: O que você quer ganhar este ano?",
-                            "Desafio: Fale como um duende por 2 rodadas"
-                        ]} />}
-                        {activeGame === 'fortune' && <RandomGenerator title="Sorte de Natal" options={[
-                            "2024 será o seu ano!", 
-                            "Amor à vista!", 
-                            "Dinheiro inesperado vai cair na conta.", 
-                            "Muitas viagens te aguardam.",
-                            "Uma grande surpresa está chegando.",
-                            "A sorte favorece os audazes.",
-                            "Você fará novas amizades incríveis.",
-                            "Um sonho antigo se realizará.",
-                            "Saúde e paz dominarão seu lar.",
-                            "Promoção no trabalho é provável."
-                        ]} />}
-                    </div>
-                )}
-            </div>
-        )}
-
-        {/* SETTINGS TAB - NEW */}
-        {activeTab === 'settings' && (
-            <div className="p-6 space-y-6">
-                
-                {/* Admin Controls */}
-                {isAdmin ? (
-                    <div className="space-y-6">
-                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                            <h3 className="font-bold text-gray-800 mb-4">Privacidade do Grupo</h3>
-                            
-                            <div className="flex items-center justify-between mb-6">
-                                <div>
-                                    <p className="font-bold text-gray-700 text-sm">Aprovação Necessária</p>
-                                    <p className="text-xs text-gray-500">Admin deve aprovar novos membros</p>
-                                </div>
-                                <button 
-                                    onClick={() => toggleGroupApproval(group.id, !group.approvalRequired)}
-                                    className={`w-12 h-6 rounded-full transition-colors relative ${group.approvalRequired ? 'bg-christmasGreen' : 'bg-gray-300'}`}
-                                >
-                                    <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${group.approvalRequired ? 'left-7' : 'left-1'}`} />
-                                </button>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="font-bold text-gray-700 text-sm">Visibilidade do Grupo</p>
-                                    <p className="text-xs text-gray-500">
-                                        {group.isPublic ? 'Público (Qualquer um pode ver/entrar)' : 'Privado (Apenas convite/código)'}
-                                    </p>
-                                </div>
-                                <button 
-                                    onClick={() => toggleGroupVisibility(group.id, !group.isPublic)}
-                                    className={`w-12 h-6 rounded-full transition-colors relative ${group.isPublic ? 'bg-christmasGreen' : 'bg-gray-300'}`}
-                                >
-                                    <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${group.isPublic ? 'left-7' : 'left-1'}`} />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Pending Requests */}
-                        {group.approvalRequired && (
+                        {group.pendingParticipants && group.pendingParticipants.length > 0 && (
                             <div className="bg-white border-2 border-dashed border-gray-200 p-4 rounded-xl">
-                                <h3 className="font-bold text-gray-800 mb-2">Solicitações Pendentes ({group.pendingParticipants?.length || 0})</h3>
-                                {(!group.pendingParticipants || group.pendingParticipants.length === 0) ? (
-                                    <p className="text-sm text-gray-400 italic">Nenhuma solicitação no momento.</p>
-                                ) : (
-                                    <div className="space-y-2 mt-2">
-                                        {group.pendingParticipants.map(pid => (
-                                            <div key={pid} className="flex items-center justify-between bg-gray-50 p-2 rounded-lg">
-                                                <span className="text-sm font-bold text-gray-700">{getParticipantName(pid)}</span>
-                                                <div className="flex gap-2">
-                                                    <button onClick={() => approveParticipant(group.id, pid)} className="p-1 bg-green-100 text-green-700 rounded hover:bg-green-200"><Check size={16} /></button>
-                                                    <button onClick={() => rejectParticipant(group.id, pid)} className="p-1 bg-red-100 text-red-700 rounded hover:bg-red-200"><X size={16} /></button>
+                                <h3 className="font-bold text-gray-800 mb-2">Solicitações Pendentes</h3>
+                                <div className="space-y-2">
+                                    {group.pendingParticipants.map(pid => (
+                                        <div key={pid} className="flex items-center justify-between bg-gray-50 p-2 rounded-lg">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold">
+                                                    {pid.substring(0,2)}
                                                 </div>
+                                                <span className="text-sm font-bold text-gray-700">{getParticipantName(pid)}</span>
                                             </div>
-                                        ))}
-                                    </div>
-                                )}
+                                            <div className="flex gap-2">
+                                                <button onClick={() => approveParticipant(group.id, pid)} className="bg-green-100 text-green-700 p-1.5 rounded-lg hover:bg-green-200">
+                                                    <Check size={16} />
+                                                </button>
+                                                <button onClick={() => rejectParticipant(group.id, pid)} className="bg-red-100 text-red-700 p-1.5 rounded-lg hover:bg-red-200">
+                                                    <X size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
-
-                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                             <h3 className="font-bold text-gray-800 mb-4">Editar Informações</h3>
-                             <div className="space-y-3">
-                                 <div>
-                                     <label className="text-xs font-bold text-gray-500 uppercase">Nome</label>
-                                     <input type="text" defaultValue={group.name} className="w-full mt-1 p-2 rounded border text-gray-900 font-bold" />
-                                 </div>
-                                 <div>
-                                     <label className="text-xs font-bold text-gray-500 uppercase">Descrição</label>
-                                     <textarea defaultValue={group.description} className="w-full mt-1 p-2 rounded border text-gray-900 text-sm" />
-                                 </div>
-                                 <button className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-bold w-full">Salvar Alterações</button>
-                             </div>
-                        </div>
                     </div>
                 ) : (
-                    <div className="text-center py-8 text-gray-500">
-                        <p>Apenas o administrador pode alterar as configurações do grupo.</p>
+                    <div className="text-center py-10">
+                        <div className="inline-block p-4 bg-gray-100 rounded-full mb-3">
+                            <Settings size={32} className="text-gray-400" />
+                        </div>
+                        <p className="text-gray-500 font-bold">Apenas o administrador pode alterar as configurações do grupo.</p>
                     </div>
                 )}
-                
-                <div className="pt-4 border-t">
-                    <button className="w-full text-red-600 font-bold text-sm py-3 hover:bg-red-50 rounded-xl transition-colors">
-                        Sair do Grupo
-                    </button>
-                </div>
             </div>
         )}
       </div>
+
+      {/* SHOP ORDER MODAL */}
+      {selectedProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in zoom-in duration-200">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-md relative">
+                <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                    <X size={24} />
+                </button>
+                <h3 className="text-xl font-bold font-header text-gray-800 mb-1">Confirmar Pedido</h3>
+                <div className="flex items-center gap-3 mb-6 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                    <img src={selectedProduct.image} className="w-16 h-16 rounded-lg object-cover" />
+                    <div>
+                        <p className="font-bold text-sm text-gray-800 line-clamp-1">{selectedProduct.name}</p>
+                        <p className="text-christmasRed font-bold">{selectedProduct.currency} {selectedProduct.price.toLocaleString()}</p>
+                    </div>
+                </div>
+                
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1 ml-1">Para quem é o presente?</label>
+                        <select 
+                            value={orderRecipient}
+                            onChange={(e) => setOrderRecipient(e.target.value)}
+                            className="w-full p-3 bg-white border-2 border-gray-200 rounded-xl font-bold focus:border-christmasGreen outline-none"
+                        >
+                            <option value="" disabled>Selecione um Kamba...</option>
+                            <option value={user.id}>Para mim mesmo (Eu mereço!)</option>
+                            {group.participants.filter(p => p !== user.id).map(pid => (
+                                <option key={pid} value={pid}>
+                                    {getParticipantName(pid)} {myReceiverId === pid ? '(Seu Amigo Oculto)' : ''}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    
+                    <div>
+                         <label className="block text-xs font-bold text-gray-500 mb-1 ml-1">Observações (Opcional)</label>
+                        <textarea 
+                            value={orderNotes}
+                            onChange={(e) => setOrderNotes(e.target.value)}
+                            rows={3} 
+                            className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-christmasGreen resize-none" 
+                            placeholder="Ex: Embrulhar para presente, adicionar cartão..."
+                        />
+                    </div>
+
+                    <button 
+                        onClick={sendOrderToWhatsApp}
+                        className="w-full bg-[#25D366] text-white py-3 rounded-xl font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg"
+                    >
+                        <Phone size={20} /> Enviar no WhatsApp
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 }

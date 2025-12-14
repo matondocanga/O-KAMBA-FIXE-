@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - O KAMBA FIXE!</title>
+    <title>O KAMBA FIXE! - Amigo Oculto</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="./css/style.css">
-    <!-- Lucide Icons via CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
         tailwind.config = {
@@ -25,154 +23,61 @@
             }
         }
     </script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Nunito', sans-serif; }
+        .font-header { font-family: 'Fredoka', sans-serif; }
+        
+        /* Snow Animation */
+        .snowflake {
+            color: #fff;
+            font-size: 1em;
+            font-family: Arial, sans-serif;
+            text-shadow: 0 0 5px #000;
+            position: fixed;
+            top: -10%;
+            z-index: 1; /* Changed from 9999 to 1 to stay behind UI */
+            user-select: none;
+            cursor: default;
+            animation-name: snowflakes-fall, snowflakes-shake;
+            animation-duration: 10s, 3s;
+            animation-timing-function: linear, ease-in-out;
+            animation-iteration-count: infinite, infinite;
+            animation-play-state: running, running;
+            pointer-events: none;
+        }
+        @keyframes snowflakes-fall { 0% { top: -10%; } 100% { top: 100%; } }
+        @keyframes snowflakes-shake { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(80px); } }
+        .snowflake:nth-of-type(0) { left: 1%; animation-delay: 0s, 0s; }
+        .snowflake:nth-of-type(1) { left: 10%; animation-delay: 1s, 1s; }
+        .snowflake:nth-of-type(2) { left: 20%; animation-delay: 6s, .5s; }
+        .snowflake:nth-of-type(3) { left: 30%; animation-delay: 4s, 2s; }
+        .snowflake:nth-of-type(4) { left: 40%; animation-delay: 2s, 2s; }
+        .snowflake:nth-of-type(5) { left: 50%; animation-delay: 8s, 3s; }
+        
+        /* Hide Scrollbar */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
 <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@^19.2.3",
-    "react/": "https://esm.sh/react@^19.2.3/",
     "react-router-dom": "https://esm.sh/react-router-dom@^7.10.1",
-    "lucide-react": "https://esm.sh/lucide-react@^0.561.0"
+    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
   }
 }
 </script>
 </head>
-<body class="bg-gradient-to-br from-christmasRed to-[#8a1c1c] min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-
-    <!-- Snowflakes Container -->
-    <div class="absolute inset-0 pointer-events-none z-0">
-        <div class="snowflake">❄</div>
-        <div class="snowflake">❅</div>
-        <div class="snowflake">❆</div>
-        <div class="snowflake">❄</div>
-        <div class="snowflake">❅</div>
-    </div>
-
-    <!-- Main Card -->
-    <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full relative z-10 border-4 border-christmasGold animate-in fade-in zoom-in duration-300">
-        
-        <!-- Header -->
-        <div class="text-center mb-8">
-            <div class="inline-block p-4 rounded-full bg-green-50 mb-4">
-                <i data-lucide="gift" class="w-12 h-12 text-christmasGreen"></i>
-            </div>
-            <div class="flex flex-col leading-none mb-2">
-                <span class="font-header font-bold text-3xl text-christmasRed">O KAMBA</span>
-                <span class="font-header font-bold text-4xl text-christmasGreen">FIXE!</span>
-            </div>
-            <p class="text-gray-500 font-body">A Plataforma Nº1 de Amigo Oculto em Angola</p>
-        </div>
-
-        <!-- Initial Options View -->
-        <div id="loginOptions" class="space-y-3">
-            <button onclick="mockLogin('Google')" class="w-full bg-[#4285F4] text-white p-3 rounded-xl font-bold flex items-center justify-center space-x-3 hover:opacity-90 transition-opacity shadow-sm">
-                <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="currentColor" d="M21.35 11.1h-9.17v2.73h6.51c-.33 3.81-3.5 5.44-6.5 5.44C8.36 19.27 5 16.25 5 12c0-4.1 3.2-7.27 7.2-7.27c3.09 0 4.9 1.97 4.9 1.97L19 4.72S16.56 2 12.1 2C6.42 2 2.03 6.8 2.03 12c0 5.05 4.13 10 10.22 10c5.35 0 9.25-3.67 9.25-9.09c0-1.15-.15-1.81-.15-1.81Z"/></svg>
-                <span>Continuar com Google</span>
-            </button>
-            
-            <button onclick="mockLogin('GitHub')" class="w-full bg-[#333] text-white p-3 rounded-xl font-bold flex items-center justify-center space-x-3 hover:opacity-90 transition-opacity shadow-sm">
-                <i data-lucide="github" class="w-5 h-5"></i>
-                <span>Continuar com GitHub</span>
-            </button>
-
-            <button onclick="mockLogin('Apple')" class="w-full bg-black text-white p-3 rounded-xl font-bold flex items-center justify-center space-x-3 hover:opacity-90 transition-opacity shadow-sm">
-                <!-- Apple Icon SVG fallback since lucide might not handle fill perfectly for brands -->
-                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.74 1.18 0 2.45-1.62 3.57-1.62 1.5.07 2.68.86 3.39 1.95-3.23 2.15-2.27 7.08.86 8.79-.59 1.54-1.39 2.75-2.9 3.11zM13 3.5c.97-1.29 1.69-2.5 1.51-3.5-1.5.09-2.9 1.05-3.68 2.18-.85 1.22-1.55 2.48-1.42 3.5 1.63.15 2.76-.78 3.59-2.18z"/></svg>
-                <span>Continuar com Apple</span>
-            </button>
-
-            <button onclick="mockLogin('X')" class="w-full bg-[#1DA1F2] text-white p-3 rounded-xl font-bold flex items-center justify-center space-x-3 hover:opacity-90 transition-opacity shadow-sm">
-                <i data-lucide="twitter" class="w-5 h-5"></i>
-                <span>Continuar com X</span>
-            </button>
-
-            <div class="mt-6 flex items-center justify-between text-gray-400 py-4">
-                <span class="h-px bg-gray-200 w-full"></span>
-                <span class="px-3 text-sm font-bold">OU</span>
-                <span class="h-px bg-gray-200 w-full"></span>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-                <button onclick="showEmailForm()" class="p-3 border-2 border-gray-100 rounded-xl flex items-center justify-center text-gray-600 hover:bg-gray-50 font-bold text-sm transition-colors">
-                    <i data-lucide="mail" class="w-5 h-5 mr-2"></i> Email
-                </button>
-                <button onclick="mockLogin('Phone')" class="p-3 border-2 border-gray-100 rounded-xl flex items-center justify-center text-gray-600 hover:bg-gray-50 font-bold text-sm transition-colors">
-                    <i data-lucide="phone" class="w-5 h-5 mr-2"></i> Telefone
-                </button>
-            </div>
-        </div>
-
-        <!-- Email Form (Hidden by default) -->
-        <form id="loginForm" class="hidden space-y-4 animate-in fade-in slide-in-from-right">
-            <div>
-                <label class="block text-sm font-bold text-gray-700">Seu Nome</label>
-                <input type="text" id="userName" required class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 focus:ring-2 focus:ring-christmasRed outline-none" placeholder="Ex: João Manuel">
-            </div>
-            <div>
-                <label class="block text-sm font-bold text-gray-700">Email</label>
-                <input type="email" id="userEmail" required class="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 focus:ring-2 focus:ring-christmasRed outline-none" placeholder="joao@exemplo.com">
-            </div>
-            
-            <button type="submit" class="w-full bg-christmasRed text-white p-4 rounded-xl font-bold hover:bg-red-800 transition-colors shadow-lg">
-                Entrar na Festa 🎄
-            </button>
-            <button type="button" onclick="hideEmailForm()" class="w-full text-gray-500 font-bold text-sm hover:underline">Voltar</button>
-        </form>
-
-        <p class="mt-8 text-center text-xs text-gray-400">
-            Ao continuar, você concorda com nossos Termos e Política Festiva.
-        </p>
-    </div>
-
-    <script src="./js/state.js"></script>
-    <script>
-        // Inicializa ícones Lucide
-        lucide.createIcons();
-
-        // Lógica de Login
-        function performLogin(name, email) {
-            const user = {
-                id: 'user-' + Date.now(),
-                name: name,
-                email: email,
-                avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
-                clothingSize: { shirt: '', pants: '', shoes: '' },
-                preferences: '',
-                dislikes: '',
-                message: ''
-            };
-            State.setUser(user);
-            window.location.href = './dashboard.html';
-        }
-
-        // Login Mock para botões sociais
-        window.mockLogin = (provider) => {
-            // Simula um login com dados fictícios para a demo
-            performLogin("Kamba " + provider, `kamba.${provider.toLowerCase()}@kambafixe.ao`);
-        };
-
-        // Alternar visualização do formulário
-        window.showEmailForm = () => {
-            document.getElementById('loginOptions').classList.add('hidden');
-            document.getElementById('loginForm').classList.remove('hidden');
-        };
-
-        window.hideEmailForm = () => {
-            document.getElementById('loginForm').classList.add('hidden');
-            document.getElementById('loginOptions').classList.remove('hidden');
-        };
-
-        // Login por formulário
-        document.getElementById('loginForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const name = document.getElementById('userName').value;
-            const email = document.getElementById('userEmail').value;
-            if(name && email) performLogin(name, email);
-        });
-
-        // Redirect if already logged in
-        if (State.getUser()) {
-            window.location.href = './dashboard.html';
-        }
-    </script>
+<body>
+    <div id="root"></div>
+    <div class="snowflake">❄</div>
+    <div class="snowflake">❅</div>
+    <div class="snowflake">❆</div>
+    <div class="snowflake">❄</div>
+    <div class="snowflake">❅</div>
+    <script type="module" src="./index.tsx"></script>
 </body>
 </html>

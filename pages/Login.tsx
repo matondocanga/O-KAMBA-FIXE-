@@ -15,13 +15,6 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-christmasRed to-[#8a1c1c] flex items-center justify-center p-4 relative overflow-hidden">
-       {/* Snowflakes Container for Login */}
-       <div className="absolute inset-0 pointer-events-none z-0">
-         <div className="snowflake">❄</div>
-         <div className="snowflake">❅</div>
-         <div className="snowflake">❆</div>
-       </div>
-
       <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full relative z-10 border-4 border-christmasGold">
         <div className="text-center mb-8">
             <div className="inline-block p-4 rounded-full bg-green-50 mb-4">
