@@ -6,5 +6,23 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: 'dist',
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            // Agrupando bibliotecas principais para estabilidade
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+              return 'react-vendor';
+            }
+            // Firebase separado para não quebrar o build
+            if (id.includes('firebase')) {
+              return 'firebase';
+            }
+            return 'vendor';
+          }
+        }
+      }
+    }
   }
 })

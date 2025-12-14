@@ -4,20 +4,25 @@ import { getFirestore } from "firebase/firestore";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
 // --- CONFIGURAÇÃO DO FIREBASE (MODULAR) ---
-// Chaves restauradas diretamente para garantir funcionamento imediato
+
+// Cast import.meta to any to resolve TS error
+const env = (import.meta as any).env;
+
 const firebaseConfig = {
-  apiKey: "AIzaSyCOnuw9R4-FhoAhGgB37eihwO8WPZ8uXYg",
-  authDomain: "o-kamba-fixe.firebaseapp.com",
-  projectId: "o-kamba-fixe",
-  storageBucket: "o-kamba-fixe.firebasestorage.app",
-  messagingSenderId: "1053297267860",
-  appId: "1:1053297267860:web:ff72dbae9f29f66d8e5081",
-  measurementId: "G-3DLF5F2C73"
+  // Fallback para hardcoded se as env vars falharem no build, 
+  // garantindo que o app não quebre em produção se o .env não for carregado corretamente pelo Vite
+  apiKey: env?.VITE_FIREBASE_API_KEY || "AIzaSyCOnuw9R4-FhoAhGgB37eihwO8WPZ8uXYg",
+  authDomain: env?.VITE_FIREBASE_AUTH_DOMAIN || "o-kamba-fixe.firebaseapp.com",
+  projectId: env?.VITE_FIREBASE_PROJECT_ID || "o-kamba-fixe",
+  storageBucket: env?.VITE_FIREBASE_STORAGE_BUCKET || "o-kamba-fixe.firebasestorage.app",
+  messagingSenderId: env?.VITE_FIREBASE_MESSAGING_SENDER_ID || "1053297267860",
+  appId: env?.VITE_FIREBASE_APP_ID || "1:1053297267860:web:ff72dbae9f29f66d8e5081",
+  measurementId: env?.VITE_FIREBASE_MEASUREMENT_ID || "G-3DLF5F2C73"
 };
 
 console.log("🔥 Inicializando Firebase Modular...");
 
-// Inicialização do App (Sintaxe V9+)
+// Inicialização do App
 const app = initializeApp(firebaseConfig);
 
 // Exportação dos serviços modulares

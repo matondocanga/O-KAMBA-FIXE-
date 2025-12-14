@@ -21,9 +21,9 @@ import {
     updateDoc, 
     getDoc, 
     arrayUnion,
+    arrayRemove,
     getDocs,
-    orderBy,
-    arrayRemove
+    orderBy
 } from 'firebase/firestore';
 
 // --- MOCK PRODUCTS ---
@@ -93,7 +93,6 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         if (firebaseUser) {
-            // Check if user exists in DB, if not create
             const userRef = doc(db, "users", firebaseUser.uid);
             const userSnap = await getDoc(userRef);
 
@@ -147,7 +146,6 @@ export const StoreProvider = ({ children }: { children?: ReactNode }) => {
     const groupIds = groups.map(g => g.id);
     if (groupIds.length === 0) return;
 
-    // MVP: Carrega mensagens e filtra localmente
     const qMsg = query(collection(db, "messages"), orderBy("timestamp", "asc"));
     const unsubMsg = onSnapshot(qMsg, (snapshot) => {
         const msgs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Message));
